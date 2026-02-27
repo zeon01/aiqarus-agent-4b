@@ -1,0 +1,40 @@
+# Secrets
+.env
+
+# Datasets (private — not published)
+data/*.jsonl
+
+# Model weights (too large for git — hosted on HuggingFace)
+aiqarus-agent-4b/
+aiqarus-agent-4b-fp32/
+aiqarus-agent-4b-bf16/
+*.safetensors
+*.bin
+*.gguf
+
+# Python
+__pycache__/
+.venv/
+*.pyc
+
+# OS
+.DS_Store
+
+# Test model outputs (scratch files from model comparison)
+test_*_output.json
+test_*_raw.txt
+deepseek_output.json
+
+# OpenRouter activity export
+openrouter_activity_*.csv
+
+# Claude Code
+.claude/
+CLAUDE.md
+
+# Internal docs (not public)
+BLOG_OUTLINE.md
+ITERATION_PLAN.md
+LAYER3_README.md
+MODEL_CARD.md
+aiqarus-agent-4b-guide.md

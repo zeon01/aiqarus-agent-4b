@@ -292,7 +292,7 @@ def run_tests(limit: int = 0):
             "type": tc_type,
             "category": category,
             "difficulty": difficulty,
-            "output": output_text[:2000],  # truncate for storage
+            "output": output_text,  # full output, no truncation
             "tool_calls_parsed": tool_calls,
             **scores,
         }
@@ -331,7 +331,7 @@ def run_tests(limit: int = 0):
     print_summary(summary)
     print(f"{'='*60}")
 
-    return summary
+    return {"summary": summary, "results": results}
 
 
 def compute_summary(results: list[dict]) -> dict:
@@ -455,6 +455,27 @@ def main(limit: int = 0):
     Flags:
       --limit N   Only run first N test cases (quick smoke test)
     """
-    summary = run_tests.remote(limit=limit)
+    import os
+
+    output = run_tests.remote(limit=limit)
+    summary = output["summary"]
+    results = output["results"]
+
+    # Save locally
+    local_dir = os.path.join(os.path.dirname(__file__), "..", "data")
+    os.makedirs(local_dir, exist_ok=True)
+
+    local_results = os.path.join(local_dir, "test_results.jsonl")
+    with open(local_results, "w") as f:
+        for r in results:
+            f.write(json.dumps(r) + "\n")
+
+    local_summary = os.path.join(local_dir, "test_summary.json")
+    with open(local_summary, "w") as f:
+        json.dump(summary, f, indent=2)
+
+    print(f"\nLocal copies saved:")
+    print(f"  {local_results}")
+    print(f"  {local_summary}")
     print("\nReturned summary:")
     print(json.dumps(summary, indent=2))

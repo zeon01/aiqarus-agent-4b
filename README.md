@@ -11,6 +11,7 @@ Fine-tuned [Qwen3-4B-Instruct](https://huggingface.co/Qwen/Qwen3-4B-Instruct-250
 | `prepare_dataset.py` | Filter, merge, and format 51K training samples from multiple sources into Qwen3 chat format |
 | `training/train.py` | QLoRA fine-tuning on Modal.com (2-stage curriculum, A10G GPU) |
 | `training/test_harness.py` | Evaluation harness — 230 test cases scoring action accuracy, tool compliance, adversarial robustness |
+| `training/llm_judge.py` | LLM-as-judge — re-scores test results using gpt-5-codex-mini for reasoning/response quality |
 | `training/merge_and_push.py` | Merge LoRA adapter into base model locally |
 | `training/push_to_hf.py` | Merge + push to HuggingFace from Modal (data center upload speeds) |
 
@@ -25,27 +26,29 @@ Fine-tuned [Qwen3-4B-Instruct](https://huggingface.co/Qwen/Qwen3-4B-Instruct-250
 
 ## Round 1 Eval Results (230 test cases)
 
-| Metric | Score |
-|---|---|
-| Overall action accuracy | **53.0%** (122/230) |
-| Tool name accuracy | 46.9% (68/145) |
-| Must-not-call compliance | 70.0% |
-| Adversarial injection detection | 13.3% (4/30) |
+Evaluated with both keyword/regex heuristics and LLM-as-judge (gpt-5-codex-mini).
 
-**By category (25 cases each):**
+| Metric | Heuristic | LLM Judge |
+|---|---|---|
+| Overall action accuracy | 53.0% | **38.7%** |
+| Avg reasoning quality | N/A | **2.1/5** |
+| Avg response quality | N/A | **1.9/5** |
 
-| Category | Accuracy |
-|---|---|
-| multi_agent_handoff | **100%** |
-| cost_aware_routing | **88%** |
-| audit_trail | **80%** |
-| multi_step | 52% |
-| tool_routing | 40% |
-| graceful_failure | 36% |
-| confidence_calibration | 28% |
-| risk_escalation | 8% |
+**By category (LLM judge, 25 cases each):**
 
-**Key finding:** Token accuracy (90.9%) ≠ decision quality (53%). The model learned perfect formatting but defaults to always calling a tool — a direct result of dataset imbalance (~80% of training data had action=call_tool). Round 2 addresses this with negative examples, adversarial training data, and flattened curriculum.
+| Category | Heuristic | LLM Judge |
+|---|---|---|
+| cost_aware_routing | 88% | **84%** |
+| audit_trail | 80% | **52%** |
+| confidence_calibration | 28% | **40%** |
+| adversarial | 46.7% | **40%** |
+| tool_routing | 40% | **40%** |
+| multi_agent_handoff | 100% | **36%** |
+| multi_step | 52% | **36%** |
+| graceful_failure | 36% | **16%** |
+| risk_escalation | 8% | **4%** |
+
+**Key finding:** Token accuracy (90.9%) ≠ decision quality (38.7%). The heuristic eval (53%) was also misleading — keyword matching inflated scores, especially for multi_agent_handoff (100% → 36%). The model formats tool calls perfectly but can't decide when to use them and barely reasons (2.1/5). Round 2 addresses this with reasoning-quality training, negative examples, adversarial data, DPO alignment, and targeted data for weak categories.
 
 ## Try It
 

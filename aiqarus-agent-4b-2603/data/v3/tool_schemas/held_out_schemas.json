@@ -1,0 +1,1743 @@
+[
+  {
+    "name": "update_contact",
+    "description": "Update an existing contact's properties. Only specified fields are modified; unset fields remain unchanged.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "contact_id": {
+          "type": "string",
+          "description": "Unique contact identifier"
+        },
+        "email": {
+          "type": "string",
+          "description": "Contact email address"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number"
+        },
+        "company": {
+          "type": "string",
+          "description": "Company the contact belongs to"
+        },
+        "lifecycle_stage": {
+          "type": "string",
+          "enum": [
+            "lead",
+            "mql",
+            "sql",
+            "opportunity",
+            "customer",
+            "churned"
+          ],
+          "description": "Contact lifecycle stage"
+        }
+      },
+      "required": [
+        "contact_id"
+      ]
+    },
+    "domain": "crm",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "delete_contact",
+    "description": "Permanently delete a contact and all associated records. This action cannot be undone.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "contact_id": {
+          "type": "string",
+          "description": "Unique contact identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        },
+        "confirm": {
+          "type": "boolean",
+          "description": "Must be set to true to confirm this destructive action"
+        }
+      },
+      "required": [
+        "contact_id",
+        "reason",
+        "confirm"
+      ]
+    },
+    "domain": "crm",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "search_activitys",
+    "description": "Search for activitys matching the specified filters. Supports full-text search across name and description fields.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "activity_type": {
+          "type": "string",
+          "enum": [
+            "call",
+            "email",
+            "meeting",
+            "note",
+            "task"
+          ],
+          "description": "Type of activity"
+        },
+        "subject": {
+          "type": "string",
+          "description": "Activity subject line"
+        },
+        "contact_id": {
+          "type": "string",
+          "description": "Contact this activity relates to"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default 25, max 100)"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results to skip for pagination"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "Start date filter in ISO 8601 format (YYYY-MM-DD)"
+        },
+        "date_to": {
+          "type": "string",
+          "description": "End date filter in ISO 8601 format (YYYY-MM-DD)"
+        }
+      },
+      "required": []
+    },
+    "domain": "crm",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "delete_subscription",
+    "description": "Permanently delete a subscription record. Only allowed for draft records that haven't been finalized.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "subscription_id": {
+          "type": "string",
+          "description": "Unique subscription identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        },
+        "confirm": {
+          "type": "boolean",
+          "description": "Must be set to true to confirm this destructive action"
+        }
+      },
+      "required": [
+        "subscription_id",
+        "reason",
+        "confirm"
+      ]
+    },
+    "domain": "billing",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "create_payment",
+    "description": "Create a new payment with the specified details. Validates all amounts and references before creation.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "number",
+          "description": "Payment amount"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "credit_card",
+            "bank_transfer",
+            "ach",
+            "wire",
+            "check"
+          ],
+          "description": "Payment method used"
+        },
+        "invoice_id": {
+          "type": "string",
+          "description": "Invoice this payment applies to"
+        },
+        "customer_id": {
+          "type": "string",
+          "description": "Customer who made the payment"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "completed",
+            "failed",
+            "refunded"
+          ],
+          "description": "Payment processing status"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tags to associate with this record"
+        }
+      },
+      "required": [
+        "amount",
+        "method",
+        "invoice_id"
+      ]
+    },
+    "domain": "billing",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "list_refunds",
+    "description": "List all refunds with optional filters. Results include summary totals and status breakdowns.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "payment_id": {
+          "type": "string",
+          "description": "Original payment to refund"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Refund amount (partial or full)"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "duplicate",
+            "product_not_received",
+            "customer_request",
+            "billing_error"
+          ],
+          "description": "Reason for the refund"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default 25, max 100)"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results to skip for pagination"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "Start date filter in ISO 8601 format (YYYY-MM-DD)"
+        },
+        "date_to": {
+          "type": "string",
+          "description": "End date filter in ISO 8601 format (YYYY-MM-DD)"
+        }
+      },
+      "required": []
+    },
+    "domain": "billing",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "approve_employee",
+    "description": "Approve a pending employee. Sends notification to the requesting employee.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "employee_id": {
+          "type": "string",
+          "description": "Unique employee identifier"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Free-text notes or comments"
+        }
+      },
+      "required": [
+        "employee_id"
+      ]
+    },
+    "domain": "hr",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "delete_employee",
+    "description": "Permanently remove a employee record. Only available for draft or test records.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "employee_id": {
+          "type": "string",
+          "description": "Unique employee identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        },
+        "confirm": {
+          "type": "boolean",
+          "description": "Must be set to true to confirm this destructive action"
+        }
+      },
+      "required": [
+        "employee_id",
+        "reason",
+        "confirm"
+      ]
+    },
+    "domain": "hr",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "get_leave_request",
+    "description": "Retrieve detailed information for a specific leave request. Includes all associated metadata and history.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "type": "string",
+          "description": "Unique leave request identifier"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Specific fields to return in the response"
+        }
+      },
+      "required": [
+        "request_id"
+      ]
+    },
+    "domain": "hr",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "update_incident",
+    "description": "Update an existing incident's fields. All changes are logged with timestamps.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "incident_id": {
+          "type": "string",
+          "description": "Unique incident identifier"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low"
+          ],
+          "description": "Incident severity level"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "investigating",
+            "mitigated",
+            "resolved",
+            "closed"
+          ],
+          "description": "Current incident status"
+        },
+        "service": {
+          "type": "string",
+          "description": "Affected service or system"
+        },
+        "assignee_id": {
+          "type": "string",
+          "description": "On-call engineer assigned to this incident"
+        }
+      },
+      "required": [
+        "incident_id"
+      ]
+    },
+    "domain": "it_devops",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "search_change_requests",
+    "description": "Search change requests by service, status, severity, or date range. Returns matching records with context.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Short description of the change"
+        },
+        "change_type": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "normal",
+            "emergency"
+          ],
+          "description": "Type of change request"
+        },
+        "risk_level": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ],
+          "description": "Assessed risk level"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default 25, max 100)"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results to skip for pagination"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "Start date filter in ISO 8601 format (YYYY-MM-DD)"
+        },
+        "date_to": {
+          "type": "string",
+          "description": "End date filter in ISO 8601 format (YYYY-MM-DD)"
+        }
+      },
+      "required": []
+    },
+    "domain": "it_devops",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "rollback_change_request",
+    "description": "Roll back a change request to its previous state. May cause service disruption during the rollback window.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "change_id": {
+          "type": "string",
+          "description": "Unique change request identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "change_id",
+        "reason"
+      ]
+    },
+    "domain": "it_devops",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "get_policy",
+    "description": "Retrieve full details of a specific policy including version history and related records.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "policy_id": {
+          "type": "string",
+          "description": "Unique compliance policy identifier"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Specific fields to return in the response"
+        }
+      },
+      "required": [
+        "policy_id"
+      ]
+    },
+    "domain": "compliance",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "create_policy",
+    "description": "Create a new policy. Validates against the applicable compliance framework requirements.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Policy title"
+        },
+        "framework": {
+          "type": "string",
+          "enum": [
+            "SOC2",
+            "GDPR",
+            "HIPAA",
+            "PCI_DSS",
+            "ISO27001",
+            "SOX"
+          ],
+          "description": "Compliance framework this policy belongs to"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "active",
+            "under_review",
+            "deprecated"
+          ],
+          "description": "Policy status"
+        },
+        "owner_id": {
+          "type": "string",
+          "description": "Policy owner (compliance officer)"
+        },
+        "review_date": {
+          "type": "string",
+          "description": "Next scheduled review date"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tags to associate with this record"
+        }
+      },
+      "required": [
+        "title",
+        "framework",
+        "status"
+      ]
+    },
+    "domain": "compliance",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "purge_policy",
+    "description": "Permanently delete a policy and all associated data. Required for GDPR right-to-erasure requests. Cannot be undone.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "policy_id": {
+          "type": "string",
+          "description": "Unique compliance policy identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        },
+        "confirm": {
+          "type": "boolean",
+          "description": "Must be set to true to confirm this destructive action"
+        }
+      },
+      "required": [
+        "policy_id",
+        "reason",
+        "confirm"
+      ]
+    },
+    "domain": "compliance",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "run_report",
+    "description": "Execute a report and return the results. For large result sets, returns a download URL.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "report_id": {
+          "type": "string",
+          "description": "Unique report identifier"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "If true, validate the operation without executing it"
+        }
+      },
+      "required": [
+        "report_id"
+      ]
+    },
+    "domain": "analytics",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "update_report",
+    "description": "Update an existing report's definition or schedule. Previous versions are retained.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "report_id": {
+          "type": "string",
+          "description": "Unique report identifier"
+        },
+        "report_type": {
+          "type": "string",
+          "enum": [
+            "dashboard",
+            "scheduled",
+            "ad_hoc",
+            "regulatory"
+          ],
+          "description": "Type of report"
+        },
+        "data_source": {
+          "type": "string",
+          "description": "Primary data source for the report"
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "pdf",
+            "csv",
+            "excel",
+            "json"
+          ],
+          "description": "Output format"
+        },
+        "schedule": {
+          "type": "string",
+          "description": "Cron expression for scheduled reports"
+        }
+      },
+      "required": [
+        "report_id"
+      ]
+    },
+    "domain": "analytics",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "delete_query",
+    "description": "Permanently delete a saved query and all cached results. Scheduled deliveries will stop immediately.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query_id": {
+          "type": "string",
+          "description": "Unique saved query identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        },
+        "confirm": {
+          "type": "boolean",
+          "description": "Must be set to true to confirm this destructive action"
+        }
+      },
+      "required": [
+        "query_id",
+        "reason",
+        "confirm"
+      ]
+    },
+    "domain": "analytics",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "get_message",
+    "description": "Retrieve a specific message by ID, including delivery status and read receipts.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "message_id": {
+          "type": "string",
+          "description": "Unique message identifier"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Specific fields to return in the response"
+        }
+      },
+      "required": [
+        "message_id"
+      ]
+    },
+    "domain": "communication",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "purge_messages",
+    "description": "Bulk delete all messages matching the specified criteria. This action cannot be undone.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "message_id": {
+          "type": "string",
+          "description": "Unique message identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        },
+        "confirm": {
+          "type": "boolean",
+          "description": "Must be set to true to confirm this destructive action"
+        }
+      },
+      "required": [
+        "message_id",
+        "reason",
+        "confirm"
+      ]
+    },
+    "domain": "communication",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "schedule_notification",
+    "description": "Schedule a notification for future delivery. Can be canceled before the scheduled time.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "notification_id": {
+          "type": "string",
+          "description": "Unique notification identifier"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Free-text notes or comments"
+        }
+      },
+      "required": [
+        "notification_id"
+      ]
+    },
+    "domain": "communication",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "archive_task",
+    "description": "Archive a task, removing it from active views. Archived tasks can be restored within 90 days.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "description": "Unique task identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "task_id",
+        "reason"
+      ]
+    },
+    "domain": "project_management",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "list_sprints",
+    "description": "List all sprints with optional filtering by project, sprint, or status. Supports pagination.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Sprint name (e.g., Sprint 24)"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "Project this sprint belongs to"
+        },
+        "start_date": {
+          "type": "string",
+          "description": "Sprint start date"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default 25, max 100)"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results to skip for pagination"
+        }
+      },
+      "required": []
+    },
+    "domain": "project_management",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "create_sprint",
+    "description": "Create a new sprint with the provided details. Sends notifications to relevant team members.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Sprint name (e.g., Sprint 24)"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "Project this sprint belongs to"
+        },
+        "start_date": {
+          "type": "string",
+          "description": "Sprint start date"
+        },
+        "end_date": {
+          "type": "string",
+          "description": "Sprint end date"
+        },
+        "goal": {
+          "type": "string",
+          "description": "Sprint goal statement"
+        },
+        "velocity": {
+          "type": "integer",
+          "description": "Planned velocity in story points"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tags to associate with this record"
+        }
+      },
+      "required": [
+        "name",
+        "project_id",
+        "start_date"
+      ]
+    },
+    "domain": "project_management",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "quarantine_vulnerability",
+    "description": "Quarantine the source of a vulnerability by isolating affected systems from the network. May cause service disruption.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "vulnerability_id": {
+          "type": "string",
+          "description": "Unique vulnerability identifier (CVE or internal)"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "vulnerability_id",
+        "reason"
+      ]
+    },
+    "domain": "security",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "search_security_events",
+    "description": "Search security events by type, severity, IP, or date range. Returns correlated results with risk context.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "enum": [
+            "login_failure",
+            "privilege_escalation",
+            "file_access",
+            "config_change",
+            "network_anomaly"
+          ],
+          "description": "Type of security event"
+        },
+        "user_id": {
+          "type": "string",
+          "description": "User involved in the event"
+        },
+        "source_ip": {
+          "type": "string",
+          "description": "IP address associated with the event"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default 25, max 100)"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results to skip for pagination"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "Start date filter in ISO 8601 format (YYYY-MM-DD)"
+        },
+        "date_to": {
+          "type": "string",
+          "description": "End date filter in ISO 8601 format (YYYY-MM-DD)"
+        }
+      },
+      "required": []
+    },
+    "domain": "security",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "create_security_event",
+    "description": "Create a new security event record. Automatically triggers severity-based alerting and escalation rules.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "enum": [
+            "login_failure",
+            "privilege_escalation",
+            "file_access",
+            "config_change",
+            "network_anomaly"
+          ],
+          "description": "Type of security event"
+        },
+        "user_id": {
+          "type": "string",
+          "description": "User involved in the event"
+        },
+        "source_ip": {
+          "type": "string",
+          "description": "IP address associated with the event"
+        },
+        "resource": {
+          "type": "string",
+          "description": "Resource or system that was accessed"
+        },
+        "risk_score": {
+          "type": "number",
+          "description": "Calculated risk score (0-100)"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tags to associate with this record"
+        }
+      },
+      "required": [
+        "event_type",
+        "user_id",
+        "source_ip"
+      ]
+    },
+    "domain": "security",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "get_purchase_order",
+    "description": "Retrieve full details of a purchase order including line items, status history, and associated documents.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "po_id": {
+          "type": "string",
+          "description": "Unique purchase order identifier"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Specific fields to return in the response"
+        }
+      },
+      "required": [
+        "po_id"
+      ]
+    },
+    "domain": "erp_supply_chain",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "update_purchase_order",
+    "description": "Update an existing purchase order's details. Cannot modify closed or finalized records.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "po_id": {
+          "type": "string",
+          "description": "Unique purchase order identifier"
+        },
+        "vendor_id": {
+          "type": "string",
+          "description": "Vendor/supplier identifier"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "submitted",
+            "approved",
+            "shipped",
+            "received",
+            "closed"
+          ],
+          "description": "Purchase order status"
+        },
+        "total_amount": {
+          "type": "number",
+          "description": "Total order amount"
+        },
+        "currency": {
+          "type": "string",
+          "description": "Order currency code"
+        }
+      },
+      "required": [
+        "po_id"
+      ]
+    },
+    "domain": "erp_supply_chain",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "write_off_shipment",
+    "description": "Write off a shipment as a loss. Creates the corresponding accounting entries and audit trail.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "shipment_id": {
+          "type": "string",
+          "description": "Unique shipment identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "shipment_id",
+        "reason"
+      ]
+    },
+    "domain": "erp_supply_chain",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "get_prescription",
+    "description": "Retrieve complete prescription information including history and associated records. Requires HIPAA-compliant access.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "prescription_id": {
+          "type": "string",
+          "description": "Unique prescription identifier"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Specific fields to return in the response"
+        }
+      },
+      "required": [
+        "prescription_id"
+      ]
+    },
+    "domain": "healthcare",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "update_prescription",
+    "description": "Update a prescription's details. Creates a timestamped amendment record per HIPAA requirements.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "prescription_id": {
+          "type": "string",
+          "description": "Unique prescription identifier"
+        },
+        "patient_id": {
+          "type": "string",
+          "description": "Patient the prescription is for"
+        },
+        "medication": {
+          "type": "string",
+          "description": "Medication name and strength"
+        },
+        "dosage": {
+          "type": "string",
+          "description": "Dosage instructions"
+        },
+        "prescriber_id": {
+          "type": "string",
+          "description": "Prescribing provider NPI"
+        }
+      },
+      "required": [
+        "prescription_id"
+      ]
+    },
+    "domain": "healthcare",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "cancel_prescription",
+    "description": "Cancel a prescription. Sends notifications to the patient and all associated providers.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "prescription_id": {
+          "type": "string",
+          "description": "Unique prescription identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "prescription_id",
+        "reason"
+      ]
+    },
+    "domain": "healthcare",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "list_transactions",
+    "description": "List transactions with optional filters for date, status, and category. Includes period totals.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "description": "Financial account identifier"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Transaction amount (positive=credit, negative=debit)"
+        },
+        "currency": {
+          "type": "string",
+          "description": "Transaction currency (ISO 4217)"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default 25, max 100)"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results to skip for pagination"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "Start date filter in ISO 8601 format (YYYY-MM-DD)"
+        },
+        "date_to": {
+          "type": "string",
+          "description": "End date filter in ISO 8601 format (YYYY-MM-DD)"
+        }
+      },
+      "required": []
+    },
+    "domain": "finance",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "create_budget",
+    "description": "Create a new budget record. Validates against budget limits and approval policies.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "department_id": {
+          "type": "string",
+          "description": "Department this budget is for"
+        },
+        "fiscal_year": {
+          "type": "string",
+          "description": "Fiscal year (e.g., FY2026)"
+        },
+        "total_amount": {
+          "type": "number",
+          "description": "Total budgeted amount"
+        },
+        "spent_amount": {
+          "type": "number",
+          "description": "Amount spent to date"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "opex",
+            "capex",
+            "personnel",
+            "marketing",
+            "r_and_d"
+          ],
+          "description": "Budget category"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "approved",
+            "active",
+            "frozen",
+            "closed"
+          ],
+          "description": "Budget status"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tags to associate with this record"
+        }
+      },
+      "required": [
+        "department_id",
+        "fiscal_year",
+        "total_amount"
+      ]
+    },
+    "domain": "finance",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "reverse_budget",
+    "description": "Reverse a finalized budget. Creates an offsetting entry and requires supervisor authorization.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "budget_id": {
+          "type": "string",
+          "description": "Unique budget identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "budget_id",
+        "reason"
+      ]
+    },
+    "domain": "finance",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "search_documents",
+    "description": "Full-text search across documents by content, title, or metadata. Returns relevance-ranked results.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Document title"
+        },
+        "file_type": {
+          "type": "string",
+          "enum": [
+            "pdf",
+            "docx",
+            "xlsx",
+            "pptx",
+            "csv",
+            "txt"
+          ],
+          "description": "Document file format"
+        },
+        "folder_id": {
+          "type": "string",
+          "description": "Parent folder identifier"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default 25, max 100)"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results to skip for pagination"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "Start date filter in ISO 8601 format (YYYY-MM-DD)"
+        },
+        "date_to": {
+          "type": "string",
+          "description": "End date filter in ISO 8601 format (YYYY-MM-DD)"
+        }
+      },
+      "required": []
+    },
+    "domain": "document_management",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "update_document",
+    "description": "Update a document's metadata or upload a new version. Previous versions are preserved.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "description": "Unique document identifier"
+        },
+        "title": {
+          "type": "string",
+          "description": "Document title"
+        },
+        "file_type": {
+          "type": "string",
+          "enum": [
+            "pdf",
+            "docx",
+            "xlsx",
+            "pptx",
+            "csv",
+            "txt"
+          ],
+          "description": "Document file format"
+        },
+        "folder_id": {
+          "type": "string",
+          "description": "Parent folder identifier"
+        },
+        "owner_id": {
+          "type": "string",
+          "description": "Document owner user ID"
+        }
+      },
+      "required": [
+        "document_id"
+      ]
+    },
+    "domain": "document_management",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "purge_folder_versions",
+    "description": "Permanently delete all but the latest version of a folder. Frees storage but removes version history.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "folder_id": {
+          "type": "string",
+          "description": "Unique folder identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        },
+        "confirm": {
+          "type": "boolean",
+          "description": "Must be set to true to confirm this destructive action"
+        }
+      },
+      "required": [
+        "folder_id",
+        "reason",
+        "confirm"
+      ]
+    },
+    "domain": "document_management",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "search_tickets",
+    "description": "Search tickets by keyword, customer, agent, or status. Returns matching results with SLA compliance data.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "type": "string",
+          "description": "Ticket subject line"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed issue description"
+        },
+        "customer_id": {
+          "type": "string",
+          "description": "Customer who raised the ticket"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default 25, max 100)"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results to skip for pagination"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "Start date filter in ISO 8601 format (YYYY-MM-DD)"
+        },
+        "date_to": {
+          "type": "string",
+          "description": "End date filter in ISO 8601 format (YYYY-MM-DD)"
+        }
+      },
+      "required": []
+    },
+    "domain": "customer_support",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "escalate_knowledge_article",
+    "description": "Escalate a knowledge article to a higher support tier or manager. Adds escalation context and resets SLA timers.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "article_id": {
+          "type": "string",
+          "description": "Unique knowledge base article identifier"
+        },
+        "target_tier": {
+          "type": "string",
+          "enum": [
+            "tier_2",
+            "tier_3",
+            "manager"
+          ],
+          "description": "Escalation target tier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "article_id",
+        "target_tier",
+        "reason"
+      ]
+    },
+    "domain": "customer_support",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "delete_knowledge_article",
+    "description": "Permanently delete a knowledge article and all associated conversation data. Cannot be recovered.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "article_id": {
+          "type": "string",
+          "description": "Unique knowledge base article identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        },
+        "confirm": {
+          "type": "boolean",
+          "description": "Must be set to true to confirm this destructive action"
+        }
+      },
+      "required": [
+        "article_id",
+        "reason",
+        "confirm"
+      ]
+    },
+    "domain": "customer_support",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "create_campaign",
+    "description": "Create a new campaign with the specified configuration. Validates audience targeting and budget limits.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Campaign name"
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "email",
+            "social",
+            "ppc",
+            "display",
+            "seo",
+            "content"
+          ],
+          "description": "Marketing channel"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "scheduled",
+            "active",
+            "paused",
+            "completed"
+          ],
+          "description": "Campaign status"
+        },
+        "budget": {
+          "type": "number",
+          "description": "Campaign budget in USD"
+        },
+        "start_date": {
+          "type": "string",
+          "description": "Campaign start date"
+        },
+        "end_date": {
+          "type": "string",
+          "description": "Campaign end date"
+        },
+        "target_audience": {
+          "type": "string",
+          "description": "Target audience segment description"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tags to associate with this record"
+        }
+      },
+      "required": [
+        "name",
+        "channel",
+        "status"
+      ]
+    },
+    "domain": "marketing",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "search_leads",
+    "description": "Search leads by name, channel, status, or date range. Returns results with performance summaries.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Lead email address"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "organic",
+            "paid",
+            "referral",
+            "event",
+            "outbound",
+            "partner"
+          ],
+          "description": "Lead acquisition source"
+        },
+        "score": {
+          "type": "integer",
+          "description": "Lead score (0-100)"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default 25, max 100)"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results to skip for pagination"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "Start date filter in ISO 8601 format (YYYY-MM-DD)"
+        },
+        "date_to": {
+          "type": "string",
+          "description": "End date filter in ISO 8601 format (YYYY-MM-DD)"
+        }
+      },
+      "required": []
+    },
+    "domain": "marketing",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "pause_email_template",
+    "description": "Immediately pause an active email template. Stops all delivery and ad spend until resumed.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "template_id": {
+          "type": "string",
+          "description": "Unique email template identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "template_id",
+        "reason"
+      ]
+    },
+    "domain": "marketing",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "reset_user_account_credentials",
+    "description": "Reset credentials for a user account. Forces re-authentication on all active sessions. Previous credentials are permanently invalidated.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "description": "Unique user account identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        },
+        "confirm": {
+          "type": "boolean",
+          "description": "Must be set to true to confirm this destructive action"
+        }
+      },
+      "required": [
+        "user_id",
+        "reason",
+        "confirm"
+      ]
+    },
+    "domain": "identity_access",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "search_api_keys",
+    "description": "Search api keys by name, status, or permission. Returns matching records with assignment details.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Descriptive name for the API key"
+        },
+        "expires_at": {
+          "type": "string",
+          "description": "Expiration date (ISO 8601), null for non-expiring"
+        },
+        "created_by": {
+          "type": "string",
+          "description": "User who created the key"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default 25, max 100)"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results to skip for pagination"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "Start date filter in ISO 8601 format (YYYY-MM-DD)"
+        },
+        "date_to": {
+          "type": "string",
+          "description": "End date filter in ISO 8601 format (YYYY-MM-DD)"
+        }
+      },
+      "required": []
+    },
+    "domain": "identity_access",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "assign_api_key",
+    "description": "Assign a api key to users or groups. Propagates permissions to all associated resources.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "key_id": {
+          "type": "string",
+          "description": "Unique API key identifier"
+        },
+        "target_user_id": {
+          "type": "string",
+          "description": "User or group to assign to"
+        },
+        "notify": {
+          "type": "boolean",
+          "description": "Whether to send notifications about this action"
+        }
+      },
+      "required": [
+        "key_id",
+        "target_user_id"
+      ]
+    },
+    "domain": "identity_access",
+    "operation_type": "write",
+    "source": "generated"
+  }
+]

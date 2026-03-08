@@ -2,53 +2,66 @@
 
 Fine-tuned [Qwen3-4B-Instruct](https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507) for enterprise AI agent tasks — tool-calling, multi-step planning, risk escalation, confidence calibration, and multi-agent handoff.
 
+Iteratively improved across two training rounds, with LLM-as-judge evaluation driving data and methodology changes between rounds.
+
 **Model:** [huggingface.co/zeon01/aiqarus-agent-4b](https://huggingface.co/zeon01/aiqarus-agent-4b)
 
 ## What's Here
 
 | Script | Purpose |
 |---|---|
-| `prepare_dataset.py` | Filter, merge, and format 51K training samples from multiple sources into Qwen3 chat format |
-| `training/train.py` | QLoRA fine-tuning on Modal.com (2-stage curriculum, A10G GPU) |
-| `training/test_harness.py` | Evaluation harness — 230 test cases scoring action accuracy, tool compliance, adversarial robustness |
-| `training/llm_judge.py` | LLM-as-judge — re-scores test results using gpt-5-codex-mini for reasoning/response quality |
-| `training/merge_and_push.py` | Merge LoRA adapter into base model locally |
-| `training/push_to_hf.py` | Merge + push to HuggingFace from Modal (data center upload speeds) |
+| `prepare_dataset.py` | Round 1: filter, merge, and format 51K training samples |
+| `prepare_dataset_v2.py` | Round 2: rebuilt dataset pipeline (77K samples, balanced actions) |
+| `training/train.py` | Round 1: QLoRA fine-tuning on Modal (2-stage curriculum, A10G) |
+| `training/train_v2.py` | Round 2: QLoRA fine-tuning on Modal (flattened curriculum, B200) |
+| `training/test_harness.py` | Single-turn eval — 230 test cases |
+| `training/eval_comparative.py` | Multi-turn eval — 110 conversation-flow cases |
+| `training/eval_bfcl.py` | BFCL v4 benchmark runner (Modal + vLLM) |
+| `training/eval_when2call.py` | When2Call benchmark runner (Modal) |
+| `training/llm_judge.py` | LLM-as-judge scoring pipeline |
+| `training/push_to_hf.py` | Merge LoRA + push to HuggingFace from Modal |
 
-## Training
+## Current: Round 2 (V2)
 
 - **Base model:** Qwen/Qwen3-4B-Instruct-2507
 - **Method:** QLoRA (4-bit NF4, rank=32, alpha=64)
-- **Dataset:** 51,642 samples across 3 layers (foundation tool-calling, reasoning traces, enterprise agent scenarios)
-- **Curriculum:** Stage 1 (Layer 1 only, 1 epoch) → Stage 2 (all layers, 2 epochs, Layer 3 upsampled 3x)
-- **Hardware:** NVIDIA A10G on Modal.com (~17 hours)
-- **Final loss:** 0.3761 | **Token accuracy:** ~90.9%
+- **Dataset:** 77K samples (public datasets + custom enterprise data, balanced action types)
+- **Curriculum:** Flattened (all data mixed from epoch 1)
+- **Hardware:** NVIDIA B200 on Modal.com (~11 hours)
+- **Final loss:** 0.288 | **Token accuracy:** ~91.2%
 
-## Round 1 Eval Results (230 test cases)
+### Training Curves (R1 vs R2)
 
-Evaluated with both keyword/regex heuristics and LLM-as-judge (gpt-5-codex-mini).
+![Training Dashboard — R1 vs R2](training/charts/combined_dashboard.png)
 
-| Metric | Heuristic | LLM Judge |
+R1 (grey): visible loss spike at step ~2,076 where Stage 2 data introduced a distribution shift. R2 (blue/green): smooth throughout — flattened curriculum eliminates the shock.
+
+### Results
+
+**Custom eval (230 enterprise cases, dual LLM judges):**
+
+| Metric | R1 | R2 (Codex / Gemini) |
 |---|---|---|
-| Overall action accuracy | 53.0% | **38.7%** |
-| Avg reasoning quality | N/A | **2.1/5** |
-| Avg response quality | N/A | **1.9/5** |
+| Action accuracy | 38.7% | **44.3% / 59.1%** |
+| Reasoning quality | 2.1/5 | **3.1 / 3.2** |
+| Response quality | 1.9/5 | **2.8 / 2.9** |
+| Risk escalation | 4% | **40% / 60%** |
 
-**By category (LLM judge, 25 cases each):**
+**Multi-turn eval (110 cases):** Composite **4.10/5** — multi-step chaining, error recovery, scope creep detection, injection defense.
 
-| Category | Heuristic | LLM Judge |
-|---|---|---|
-| cost_aware_routing | 88% | **84%** |
-| audit_trail | 80% | **52%** |
-| confidence_calibration | 28% | **40%** |
-| adversarial | 46.7% | **40%** |
-| tool_routing | 40% | **40%** |
-| multi_agent_handoff | 100% | **36%** |
-| multi_step | 52% | **36%** |
-| graceful_failure | 36% | **16%** |
-| risk_escalation | 8% | **4%** |
+**External benchmarks:**
 
-**Key finding:** Token accuracy (90.9%) ≠ decision quality (38.7%). The heuristic eval (53%) was also misleading — keyword matching inflated scores, especially for multi_agent_handoff (100% → 36%). The model formats tool calls perfectly but can't decide when to use them and barely reasons (2.1/5). Round 2 addresses this with reasoning-quality training, negative examples, adversarial data, DPO alignment, and targeted data for weak categories.
+| Benchmark | Finetuned | Base | Delta | Notes |
+|---|---|---|---|---|
+| When2Call accuracy | 47.7% | 41.1% | +6.6% | MCQ format, directional |
+| BFCL v4 overall | 21.32% | 35.68% | -14.36% | Format mismatch (FC vs `<tool_call>`) |
+
+## Round 1 (V1)
+
+- **Dataset:** 51K samples, 2-stage curriculum, A10G, ~17 hours
+- **Result:** 38.7% true accuracy (LLM judge). Heuristic reported 53% — misleading.
+- **Root cause:** 80% tool-calling bias, zero negative examples, no adversarial data.
+- See [Round 1 details on HuggingFace](https://huggingface.co/zeon01/aiqarus-agent-4b).
 
 ## Try It
 

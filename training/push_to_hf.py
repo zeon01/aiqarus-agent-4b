@@ -13,7 +13,7 @@ import modal
 
 BASE_MODEL  = "Qwen/Qwen3-4B-Instruct-2507"
 VOLUME_NAME = "aiqarus-data"
-ADAPTER_DIR = "/data/adapter/aiqarus-agent-4b"
+ADAPTER_DIR = "/data/adapter/aiqarus-agent-4b-v2"
 HF_REPO     = "zeon01/aiqarus-agent-4b"
 
 image = (

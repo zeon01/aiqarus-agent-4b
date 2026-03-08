@@ -72,8 +72,8 @@
     "source": "generated"
   },
   {
-    "name": "search_activitys",
-    "description": "Search for activitys matching the specified filters. Supports full-text search across name and description fields.",
+    "name": "search_activities",
+    "description": "Search for activities matching the specified filters. Supports full-text search across name and description fields.",
     "parameters": {
       "type": "object",
       "properties": {
@@ -1738,6 +1738,733 @@
     },
     "domain": "identity_access",
     "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "archive_contract",
+    "description": "Archive a contract, removing it from active views. Archived records are retained per the document retention policy and can be restored.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "contract_id": {
+          "type": "string",
+          "description": "Unique contract identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "contract_id",
+        "reason"
+      ]
+    },
+    "domain": "legal",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "create_nda",
+    "description": "Create a new nda record with the specified details. Validates required fields and jurisdiction-specific rules.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "party_name": {
+          "type": "string",
+          "description": "Counterparty to the NDA"
+        },
+        "nda_type": {
+          "type": "string",
+          "enum": [
+            "mutual",
+            "unilateral"
+          ],
+          "description": "Whether the NDA is mutual or one-way"
+        },
+        "effective_date": {
+          "type": "string",
+          "description": "NDA effective date (YYYY-MM-DD)"
+        },
+        "expiry_date": {
+          "type": "string",
+          "description": "NDA expiry date (YYYY-MM-DD)"
+        },
+        "jurisdiction": {
+          "type": "string",
+          "description": "Governing jurisdiction"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "active",
+            "expired",
+            "terminated"
+          ],
+          "description": "NDA status"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tags to associate with this record"
+        }
+      },
+      "required": [
+        "party_name",
+        "nda_type",
+        "effective_date"
+      ]
+    },
+    "domain": "legal",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "list_amendments",
+    "description": "List all amendments with optional filtering by status, jurisdiction, or expiry date. Includes summary metadata.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "contract_id": {
+          "type": "string",
+          "description": "Contract being amended"
+        },
+        "amendment_number": {
+          "type": "integer",
+          "description": "Sequential amendment number"
+        },
+        "effective_date": {
+          "type": "string",
+          "description": "Date the amendment takes effect (YYYY-MM-DD)"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default 25, max 100)"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results to skip for pagination"
+        }
+      },
+      "required": []
+    },
+    "domain": "legal",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "list_interviews",
+    "description": "List all interviews with optional filtering by position, stage, or status. Includes pipeline statistics.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "candidate_id": {
+          "type": "string",
+          "description": "Candidate being interviewed"
+        },
+        "interviewer_id": {
+          "type": "string",
+          "description": "Employee conducting the interview"
+        },
+        "interview_type": {
+          "type": "string",
+          "enum": [
+            "phone_screen",
+            "technical",
+            "behavioral",
+            "panel",
+            "onsite",
+            "hiring_manager"
+          ],
+          "description": "Type of interview"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default 25, max 100)"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results to skip for pagination"
+        }
+      },
+      "required": []
+    },
+    "domain": "recruitment",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "update_interview",
+    "description": "Update an existing interview's fields. Changes are logged in the activity timeline.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "interview_id": {
+          "type": "string",
+          "description": "Unique interview identifier"
+        },
+        "candidate_id": {
+          "type": "string",
+          "description": "Candidate being interviewed"
+        },
+        "interviewer_id": {
+          "type": "string",
+          "description": "Employee conducting the interview"
+        },
+        "interview_type": {
+          "type": "string",
+          "enum": [
+            "phone_screen",
+            "technical",
+            "behavioral",
+            "panel",
+            "onsite",
+            "hiring_manager"
+          ],
+          "description": "Type of interview"
+        },
+        "scheduled_time": {
+          "type": "string",
+          "description": "Interview date and time (ISO 8601)"
+        }
+      },
+      "required": [
+        "interview_id"
+      ]
+    },
+    "domain": "recruitment",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "withdraw_offer",
+    "description": "Withdraw a offer from the process at the candidate's request. Closes the associated application and notifies the hiring team.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "offer_id": {
+          "type": "string",
+          "description": "Unique offer identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "offer_id",
+        "reason"
+      ]
+    },
+    "domain": "recruitment",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "audit_transfer_transaction",
+    "description": "Initiate a formal audit of a transfer's transactions for suspected fraud or regulatory violations. Flags the account and notifies the compliance team.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "transfer_id": {
+          "type": "string",
+          "description": "Unique transfer identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "transfer_id",
+        "reason"
+      ]
+    },
+    "domain": "banking",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "list_kyc_checks",
+    "description": "List all kyc checks with optional filtering by status, type, or date range. Includes summary balances and risk flags.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "customer_id": {
+          "type": "string",
+          "description": "Customer being verified"
+        },
+        "check_type": {
+          "type": "string",
+          "enum": [
+            "identity",
+            "address",
+            "sanctions",
+            "pep",
+            "adverse_media"
+          ],
+          "description": "Type of KYC check"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "in_progress",
+            "passed",
+            "failed",
+            "requires_review"
+          ],
+          "description": "KYC check status"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default 25, max 100)"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results to skip for pagination"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "Start date filter in ISO 8601 format (YYYY-MM-DD)"
+        },
+        "date_to": {
+          "type": "string",
+          "description": "End date filter in ISO 8601 format (YYYY-MM-DD)"
+        }
+      },
+      "required": []
+    },
+    "domain": "banking",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "initiate_kyc_check",
+    "description": "Initiate a new kyc check transaction. Validates funds availability, beneficiary details, and applies fraud screening rules.",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    },
+    "domain": "banking",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "deny_policy",
+    "description": "Deny a policy. Sends the denial notice to the policyholder with the reason and appeal instructions. Denial decisions are subject to regulatory review.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "policy_id": {
+          "type": "string",
+          "description": "Unique insurance policy identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "policy_id",
+        "reason"
+      ]
+    },
+    "domain": "insurance",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "file_claim",
+    "description": "File a new insurance claim. Initiates the claims workflow and assigns an adjuster based on claim type and severity.",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    },
+    "domain": "insurance",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "get_premium",
+    "description": "Retrieve full details of a premium including coverage breakdown, payment history, and claim records.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "premium_id": {
+          "type": "string",
+          "description": "Unique premium payment identifier"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Specific fields to return in the response"
+        }
+      },
+      "required": [
+        "premium_id"
+      ]
+    },
+    "domain": "insurance",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "get_property",
+    "description": "Retrieve full details of a property including financial history, associated leases, and maintenance records.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "property_id": {
+          "type": "string",
+          "description": "Unique property identifier"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Specific fields to return in the response"
+        }
+      },
+      "required": [
+        "property_id"
+      ]
+    },
+    "domain": "real_estate",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "publish_lease",
+    "description": "Publish a lease to configured listing platforms and portals. Makes the listing publicly visible.",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    },
+    "domain": "real_estate",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "terminate_tenant_lease",
+    "description": "Terminate a lease agreement before its natural end date. Triggers notice period calculations, security deposit processing, and tenant notification. May have legal implications.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "tenant_id": {
+          "type": "string",
+          "description": "Unique tenant identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "reason"
+      ]
+    },
+    "domain": "real_estate",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "search_products",
+    "description": "Search products by name, SKU, category, status, or price range. Returns matching results with inventory data.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "sku": {
+          "type": "string",
+          "description": "Stock keeping unit code"
+        },
+        "product_name": {
+          "type": "string",
+          "description": "Product display name"
+        },
+        "price": {
+          "type": "number",
+          "description": "Current retail price"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default 25, max 100)"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results to skip for pagination"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "Start date filter in ISO 8601 format (YYYY-MM-DD)"
+        },
+        "date_to": {
+          "type": "string",
+          "description": "End date filter in ISO 8601 format (YYYY-MM-DD)"
+        }
+      },
+      "required": []
+    },
+    "domain": "retail",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "process_product_return",
+    "description": "Process a product return and initiate the refund. Updates inventory, processes the refund to the original payment method, and closes the RMA.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "product_id": {
+          "type": "string",
+          "description": "Unique product identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "product_id",
+        "reason"
+      ]
+    },
+    "domain": "retail",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "update_order_inventory",
+    "description": "Update inventory quantities for a order. Triggers reorder alerts if stock falls below the configured threshold.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "order_id": {
+          "type": "string",
+          "description": "Unique order identifier"
+        },
+        "customer_id": {
+          "type": "string",
+          "description": "Customer who placed the order"
+        },
+        "order_status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "processing",
+            "shipped",
+            "delivered",
+            "cancelled"
+          ],
+          "description": "Current order fulfillment status"
+        },
+        "total_amount": {
+          "type": "number",
+          "description": "Total order amount including tax and shipping"
+        },
+        "shipping_address": {
+          "type": "string",
+          "description": "Delivery address for the order"
+        }
+      },
+      "required": [
+        "order_id"
+      ]
+    },
+    "domain": "retail",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "get_student",
+    "description": "Retrieve full details of a student including enrollment data, grades, and associated records.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "student_id": {
+          "type": "string",
+          "description": "Unique student identifier"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Specific fields to return in the response"
+        }
+      },
+      "required": [
+        "student_id"
+      ]
+    },
+    "domain": "education",
+    "operation_type": "read",
+    "source": "generated"
+  },
+  {
+    "name": "create_student",
+    "description": "Create a new student record. Validates academic references and prerequisite requirements before saving.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Student full name"
+        },
+        "email": {
+          "type": "string",
+          "description": "Student email address"
+        },
+        "program": {
+          "type": "string",
+          "description": "Degree program or major"
+        },
+        "gpa": {
+          "type": "number",
+          "description": "Current cumulative GPA (0.0-4.0)"
+        },
+        "enrollment_year": {
+          "type": "integer",
+          "description": "Year the student first enrolled"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "on_leave",
+            "graduated",
+            "suspended",
+            "withdrawn"
+          ],
+          "description": "Student enrollment status"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tags to associate with this record"
+        }
+      },
+      "required": [
+        "name",
+        "email",
+        "program"
+      ]
+    },
+    "domain": "education",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "check_assignment_prerequisite",
+    "description": "Check whether prerequisite requirements are met for a assignment. Returns pass/fail with details on missing requirements.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "assignment_id": {
+          "type": "string",
+          "description": "Unique assignment identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "assignment_id",
+        "reason"
+      ]
+    },
+    "domain": "education",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "cancel_route_shipment",
+    "description": "Cancel a shipment. Reverses carrier bookings, releases reserved capacity, and notifies the sender and recipient. Cannot be undone once the carrier has picked up the goods.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "route_id": {
+          "type": "string",
+          "description": "Unique route identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for this action (required for audit trail)"
+        }
+      },
+      "required": [
+        "route_id",
+        "reason"
+      ]
+    },
+    "domain": "logistics",
+    "operation_type": "dangerous",
+    "source": "generated"
+  },
+  {
+    "name": "reroute_vehicle",
+    "description": "Reroute a vehicle to a different destination or via an alternative path. Recalculates ETA and notifies all affected parties.",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    },
+    "domain": "logistics",
+    "operation_type": "write",
+    "source": "generated"
+  },
+  {
+    "name": "search_warehouses",
+    "description": "Search warehouses by tracking number, origin, destination, carrier, or status. Returns matching records with logistics context.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Warehouse facility name"
+        },
+        "address": {
+          "type": "string",
+          "description": "Warehouse physical address"
+        },
+        "capacity_sqft": {
+          "type": "number",
+          "description": "Total storage capacity in square feet"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (default 25, max 100)"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Number of results to skip for pagination"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "Start date filter in ISO 8601 format (YYYY-MM-DD)"
+        },
+        "date_to": {
+          "type": "string",
+          "description": "End date filter in ISO 8601 format (YYYY-MM-DD)"
+        }
+      },
+      "required": []
+    },
+    "domain": "logistics",
+    "operation_type": "read",
     "source": "generated"
   }
 ]

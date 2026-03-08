@@ -2,8 +2,8 @@
 """
 Enterprise Tool Schema Library Generator
 
-Generates 250+ realistic enterprise tool-calling schemas across 16 domains.
-Outputs: 200 training schemas + 50+ held-out schemas for testing.
+Generates 400+ realistic enterprise tool-calling schemas across 24 domains.
+Outputs: training schemas + held-out schemas for testing.
 
 Design: Each domain defines entities, operations (by risk level), and
 domain-specific parameter pools. The generator combines these to produce
@@ -13,8 +13,18 @@ enums, and required fields.
 
 import json
 import random
+import re
 from pathlib import Path
 from collections import defaultdict
+
+
+def pluralize(word: str) -> str:
+    """Simple English pluralization for tool names."""
+    if word.endswith("y") and word[-2] not in "aeiou":
+        return word[:-1] + "ies"
+    if word.endswith(("s", "sh", "ch", "x", "z")):
+        return word + "es"
+    return word + "s"
 
 random.seed(42)
 
@@ -38,7 +48,7 @@ COMMON_PARAMS = {
 }
 
 # ---------------------------------------------------------------------------
-# 16 Enterprise Domains
+# 24 Enterprise Domains
 # ---------------------------------------------------------------------------
 DOMAINS = {
     "crm": {
@@ -998,6 +1008,644 @@ DOMAINS = {
             ],
         },
     },
+    "legal": {
+        "label": "Contract Management / Legal",
+        "entities": {
+            "contract": {
+                "id_param": ("contract_id", "Unique contract identifier"),
+                "specific_params": {
+                    "contract_type": {"type": "string", "enum": ["master_service_agreement", "nda", "sow", "license", "employment", "vendor"], "description": "Type of contract"},
+                    "party_name": {"type": "string", "description": "Name of the counterparty to the contract"},
+                    "effective_date": {"type": "string", "description": "Date the contract takes effect (YYYY-MM-DD)"},
+                    "expiry_date": {"type": "string", "description": "Date the contract expires (YYYY-MM-DD)"},
+                    "jurisdiction": {"type": "string", "description": "Governing law jurisdiction (e.g., State of Delaware, England and Wales)"},
+                    "status": {"type": "string", "enum": ["draft", "active", "expired", "terminated"], "description": "Current contract status"},
+                },
+            },
+            "clause": {
+                "id_param": ("clause_id", "Unique clause identifier"),
+                "specific_params": {
+                    "contract_id": {"type": "string", "description": "Contract this clause belongs to"},
+                    "clause_type": {"type": "string", "enum": ["indemnification", "limitation_of_liability", "termination", "confidentiality", "ip_ownership", "force_majeure", "governing_law"], "description": "Clause category"},
+                    "section_number": {"type": "string", "description": "Section number within the contract (e.g., 4.2.1)"},
+                    "text": {"type": "string", "description": "Full text of the clause"},
+                    "risk_flag": {"type": "boolean", "description": "Whether this clause has been flagged for legal review"},
+                },
+            },
+            "nda": {
+                "id_param": ("nda_id", "Unique NDA identifier"),
+                "specific_params": {
+                    "party_name": {"type": "string", "description": "Counterparty to the NDA"},
+                    "nda_type": {"type": "string", "enum": ["mutual", "unilateral"], "description": "Whether the NDA is mutual or one-way"},
+                    "effective_date": {"type": "string", "description": "NDA effective date (YYYY-MM-DD)"},
+                    "expiry_date": {"type": "string", "description": "NDA expiry date (YYYY-MM-DD)"},
+                    "jurisdiction": {"type": "string", "description": "Governing jurisdiction"},
+                    "status": {"type": "string", "enum": ["draft", "active", "expired", "terminated"], "description": "NDA status"},
+                },
+            },
+            "legal_case": {
+                "id_param": ("case_id", "Unique legal case identifier"),
+                "specific_params": {
+                    "case_title": {"type": "string", "description": "Case title or caption"},
+                    "case_type": {"type": "string", "enum": ["litigation", "arbitration", "regulatory", "internal_investigation"], "description": "Type of legal proceeding"},
+                    "status": {"type": "string", "enum": ["open", "discovery", "trial", "settled", "closed"], "description": "Current case status"},
+                    "opposing_party": {"type": "string", "description": "Name of the opposing party"},
+                    "assigned_attorney": {"type": "string", "description": "Lead attorney handling the case"},
+                    "court_jurisdiction": {"type": "string", "description": "Court or tribunal jurisdiction"},
+                },
+            },
+            "amendment": {
+                "id_param": ("amendment_id", "Unique amendment identifier"),
+                "specific_params": {
+                    "contract_id": {"type": "string", "description": "Contract being amended"},
+                    "amendment_number": {"type": "integer", "description": "Sequential amendment number"},
+                    "effective_date": {"type": "string", "description": "Date the amendment takes effect (YYYY-MM-DD)"},
+                    "description": {"type": "string", "description": "Summary of the changes made by this amendment"},
+                    "status": {"type": "string", "enum": ["draft", "pending_approval", "executed", "rejected"], "description": "Amendment approval status"},
+                },
+            },
+        },
+        "operations": {
+            "read": [
+                ("get_{e}", "Retrieve full details of a {E} including version history, related parties, and associated documents."),
+                ("search_{e}s", "Search {E}s by party name, type, status, or date range. Returns matching records with key terms highlighted."),
+                ("list_{e}s", "List all {E}s with optional filtering by status, jurisdiction, or expiry date. Includes summary metadata."),
+            ],
+            "write": [
+                ("create_{e}", "Create a new {E} record with the specified details. Validates required fields and jurisdiction-specific rules."),
+                ("update_{e}", "Update an existing {E}'s fields. Changes are versioned and logged for audit trail compliance."),
+                ("validate_{e}_compliance", "Run compliance checks on a {E} against organizational legal policies. Returns a list of issues or warnings."),
+            ],
+            "dangerous": [
+                ("terminate_{e}", "Terminate a {E} before its natural expiry. Triggers counterparty notification and generates the termination notice. This action may have legal consequences."),
+                ("archive_{e}", "Archive a {E}, removing it from active views. Archived records are retained per the document retention policy and can be restored."),
+            ],
+            "check": [
+                ("check_{e}_expiry", "Check expiry status and upcoming renewal deadlines for a {E}. Returns days remaining and renewal recommendations."),
+            ],
+        },
+    },
+    "recruitment": {
+        "label": "Recruitment / ATS",
+        "entities": {
+            "candidate": {
+                "id_param": ("candidate_id", "Unique candidate identifier"),
+                "specific_params": {
+                    "name": {"type": "string", "description": "Candidate full name"},
+                    "email": {"type": "string", "description": "Candidate email address"},
+                    "position_id": {"type": "string", "description": "Position the candidate is applying for"},
+                    "experience_years": {"type": "integer", "description": "Total years of relevant professional experience"},
+                    "stage": {"type": "string", "enum": ["applied", "screening", "interview", "offer", "hired", "rejected"], "description": "Current stage in the hiring pipeline"},
+                    "source": {"type": "string", "enum": ["referral", "linkedin", "job_board", "careers_page", "agency", "internal"], "description": "How the candidate was sourced"},
+                },
+            },
+            "job_posting": {
+                "id_param": ("posting_id", "Unique job posting identifier"),
+                "specific_params": {
+                    "title": {"type": "string", "description": "Job title"},
+                    "department": {"type": "string", "description": "Hiring department"},
+                    "salary_range": {"type": "string", "description": "Salary range for the position (e.g., $120K-$160K)"},
+                    "location": {"type": "string", "description": "Office location or remote/hybrid"},
+                    "status": {"type": "string", "enum": ["draft", "open", "closed", "on_hold", "filled"], "description": "Posting status"},
+                    "headcount": {"type": "integer", "description": "Number of positions to fill"},
+                },
+            },
+            "interview": {
+                "id_param": ("interview_id", "Unique interview identifier"),
+                "specific_params": {
+                    "candidate_id": {"type": "string", "description": "Candidate being interviewed"},
+                    "interviewer_id": {"type": "string", "description": "Employee conducting the interview"},
+                    "interview_type": {"type": "string", "enum": ["phone_screen", "technical", "behavioral", "panel", "onsite", "hiring_manager"], "description": "Type of interview"},
+                    "scheduled_time": {"type": "string", "description": "Interview date and time (ISO 8601)"},
+                    "duration_minutes": {"type": "integer", "description": "Expected interview duration in minutes"},
+                    "status": {"type": "string", "enum": ["scheduled", "completed", "canceled", "no_show"], "description": "Interview status"},
+                },
+            },
+            "application": {
+                "id_param": ("application_id", "Unique application identifier"),
+                "specific_params": {
+                    "candidate_id": {"type": "string", "description": "Candidate who submitted the application"},
+                    "position_id": {"type": "string", "description": "Position applied for"},
+                    "resume_url": {"type": "string", "description": "URL to the candidate's resume"},
+                    "cover_letter": {"type": "string", "description": "Cover letter text"},
+                    "submitted_date": {"type": "string", "description": "Date the application was submitted (YYYY-MM-DD)"},
+                    "status": {"type": "string", "enum": ["received", "under_review", "shortlisted", "rejected", "withdrawn"], "description": "Application review status"},
+                },
+            },
+            "offer": {
+                "id_param": ("offer_id", "Unique offer identifier"),
+                "specific_params": {
+                    "candidate_id": {"type": "string", "description": "Candidate receiving the offer"},
+                    "position_id": {"type": "string", "description": "Position the offer is for"},
+                    "salary": {"type": "number", "description": "Annual base salary offered"},
+                    "start_date": {"type": "string", "description": "Proposed start date (YYYY-MM-DD)"},
+                    "expiry_date": {"type": "string", "description": "Date the offer expires (YYYY-MM-DD)"},
+                    "status": {"type": "string", "enum": ["draft", "sent", "accepted", "declined", "expired", "rescinded"], "description": "Offer status"},
+                },
+            },
+        },
+        "operations": {
+            "read": [
+                ("get_{e}", "Retrieve full details of a {E} including history, notes, and associated records."),
+                ("search_{e}s", "Search {E}s by name, department, stage, or date range. Returns matching records with pipeline context."),
+                ("list_{e}s", "List all {E}s with optional filtering by position, stage, or status. Includes pipeline statistics."),
+            ],
+            "write": [
+                ("create_{e}", "Create a new {E} record. Validates required fields and triggers the appropriate workflow notifications."),
+                ("update_{e}", "Update an existing {E}'s fields. Changes are logged in the activity timeline."),
+                ("schedule_{e}", "Schedule or reschedule a {E}. Sends calendar invitations to all participants."),
+                ("check_{e}_eligibility", "Check whether a {E} meets the minimum requirements for the associated position. Returns pass/fail with details."),
+            ],
+            "dangerous": [
+                ("reject_{e}", "Reject a {E} and send the configured rejection notification. Updates the pipeline and frees the position slot. This action cannot be easily reversed."),
+                ("withdraw_{e}", "Withdraw a {E} from the process at the candidate's request. Closes the associated application and notifies the hiring team."),
+            ],
+            "check": [
+                ("check_{e}_pipeline", "Get pipeline metrics and stage distribution for a {E}. Returns time-in-stage, conversion rates, and bottleneck analysis."),
+            ],
+        },
+    },
+    "banking": {
+        "label": "Banking / Financial Services",
+        "entities": {
+            "account": {
+                "id_param": ("account_id", "Unique bank account identifier"),
+                "specific_params": {
+                    "account_number": {"type": "string", "description": "Bank account number"},
+                    "routing_number": {"type": "string", "description": "Bank routing/sort code number"},
+                    "account_type": {"type": "string", "enum": ["checking", "savings", "money_market", "cd", "business"], "description": "Type of bank account"},
+                    "currency": {"type": "string", "enum": ["USD", "EUR", "GBP", "JPY", "CHF"], "description": "Account currency"},
+                    "balance": {"type": "number", "description": "Current account balance"},
+                    "status": {"type": "string", "enum": ["active", "dormant", "frozen", "closed"], "description": "Account status"},
+                },
+            },
+            "transfer": {
+                "id_param": ("transfer_id", "Unique transfer identifier"),
+                "specific_params": {
+                    "source_account_id": {"type": "string", "description": "Source account for the transfer"},
+                    "destination_account_id": {"type": "string", "description": "Destination account for the transfer"},
+                    "amount": {"type": "number", "description": "Transfer amount"},
+                    "currency": {"type": "string", "description": "Transfer currency (ISO 4217)"},
+                    "transaction_type": {"type": "string", "enum": ["credit", "debit", "transfer"], "description": "Type of transaction"},
+                    "status": {"type": "string", "enum": ["pending", "processing", "completed", "failed", "reversed"], "description": "Transfer processing status"},
+                    "reference": {"type": "string", "description": "Payment reference or memo"},
+                },
+            },
+            "beneficiary": {
+                "id_param": ("beneficiary_id", "Unique beneficiary identifier"),
+                "specific_params": {
+                    "name": {"type": "string", "description": "Beneficiary name"},
+                    "account_number": {"type": "string", "description": "Beneficiary account number"},
+                    "routing_number": {"type": "string", "description": "Beneficiary bank routing number"},
+                    "bank_name": {"type": "string", "description": "Beneficiary bank name"},
+                    "country": {"type": "string", "description": "Beneficiary country (ISO 3166-1 alpha-2)"},
+                    "risk_level": {"type": "string", "enum": ["low", "medium", "high"], "description": "Assessed risk level for this beneficiary"},
+                },
+            },
+            "statement": {
+                "id_param": ("statement_id", "Unique statement identifier"),
+                "specific_params": {
+                    "account_id": {"type": "string", "description": "Account this statement belongs to"},
+                    "period_start": {"type": "string", "description": "Statement period start date (YYYY-MM-DD)"},
+                    "period_end": {"type": "string", "description": "Statement period end date (YYYY-MM-DD)"},
+                    "opening_balance": {"type": "number", "description": "Balance at the start of the period"},
+                    "closing_balance": {"type": "number", "description": "Balance at the end of the period"},
+                    "transaction_count": {"type": "integer", "description": "Number of transactions in the period"},
+                },
+            },
+            "kyc_check": {
+                "id_param": ("kyc_id", "Unique KYC check identifier"),
+                "specific_params": {
+                    "customer_id": {"type": "string", "description": "Customer being verified"},
+                    "check_type": {"type": "string", "enum": ["identity", "address", "sanctions", "pep", "adverse_media"], "description": "Type of KYC check"},
+                    "status": {"type": "string", "enum": ["pending", "in_progress", "passed", "failed", "requires_review"], "description": "KYC check status"},
+                    "risk_level": {"type": "string", "enum": ["low", "medium", "high", "unacceptable"], "description": "Risk level determined by the check"},
+                    "document_type": {"type": "string", "enum": ["passport", "drivers_license", "national_id", "utility_bill", "bank_statement"], "description": "Type of supporting document"},
+                },
+            },
+        },
+        "operations": {
+            "read": [
+                ("get_{e}", "Retrieve full details of a {E} including transaction history and compliance flags. All access is logged for regulatory compliance."),
+                ("search_{e}s", "Search {E}s by account number, customer, amount range, or date. Returns matching records with risk indicators."),
+                ("list_{e}s", "List all {E}s with optional filtering by status, type, or date range. Includes summary balances and risk flags."),
+            ],
+            "write": [
+                ("create_{e}", "Create a new {E} record. Validates regulatory requirements and triggers compliance checks before creation."),
+                ("initiate_{e}", "Initiate a new {E} transaction. Validates funds availability, beneficiary details, and applies fraud screening rules."),
+                ("verify_{e}", "Mark a {E} as verified after completing the required checks. Updates the compliance record accordingly."),
+            ],
+            "dangerous": [
+                ("freeze_{e}", "Freeze a {E}, blocking all transactions. Requires compliance officer authorization and triggers regulatory notification. Cannot be reversed without a formal review."),
+                ("close_{e}", "Permanently close a {E}. Disburses remaining balance to the designated account and generates final statements. This action cannot be undone."),
+                ("audit_{e}_transaction", "Initiate a formal audit of a {E}'s transactions for suspected fraud or regulatory violations. Flags the account and notifies the compliance team."),
+            ],
+            "check": [
+                ("check_{e}_risk", "Run a risk assessment on a {E}. Returns risk score, suspicious activity indicators, and recommended actions."),
+            ],
+        },
+    },
+    "insurance": {
+        "label": "Insurance",
+        "entities": {
+            "policy": {
+                "id_param": ("policy_id", "Unique insurance policy identifier"),
+                "specific_params": {
+                    "policy_number": {"type": "string", "description": "Human-readable policy number"},
+                    "policyholder_id": {"type": "string", "description": "Policyholder customer identifier"},
+                    "policy_type": {"type": "string", "enum": ["auto", "health", "property", "life", "liability", "umbrella"], "description": "Type of insurance policy"},
+                    "coverage_amount": {"type": "number", "description": "Total coverage amount in the policy currency"},
+                    "deductible": {"type": "number", "description": "Deductible amount the policyholder must pay before coverage applies"},
+                    "status": {"type": "string", "enum": ["active", "lapsed", "canceled", "expired", "pending_renewal"], "description": "Current policy status"},
+                },
+            },
+            "claim": {
+                "id_param": ("claim_id", "Unique claim identifier"),
+                "specific_params": {
+                    "policy_id": {"type": "string", "description": "Policy under which the claim is filed"},
+                    "policyholder_id": {"type": "string", "description": "Policyholder filing the claim"},
+                    "claim_type": {"type": "string", "enum": ["auto", "health", "property", "life"], "description": "Type of insurance claim"},
+                    "incident_date": {"type": "string", "description": "Date the covered incident occurred (YYYY-MM-DD)"},
+                    "claimed_amount": {"type": "number", "description": "Amount claimed by the policyholder"},
+                    "status": {"type": "string", "enum": ["filed", "under_review", "approved", "denied", "settled", "appealed"], "description": "Claim processing status"},
+                },
+            },
+            "underwriting_assessment": {
+                "id_param": ("assessment_id", "Unique underwriting assessment identifier"),
+                "specific_params": {
+                    "applicant_id": {"type": "string", "description": "Applicant being assessed"},
+                    "policy_type": {"type": "string", "enum": ["auto", "health", "property", "life"], "description": "Type of policy being underwritten"},
+                    "risk_score": {"type": "number", "description": "Calculated risk score (0-100)"},
+                    "risk_factors": {"type": "array", "items": {"type": "string"}, "description": "List of identified risk factors"},
+                    "recommendation": {"type": "string", "enum": ["approve", "approve_with_conditions", "decline", "refer_to_senior"], "description": "Underwriting recommendation"},
+                    "status": {"type": "string", "enum": ["pending", "in_progress", "completed"], "description": "Assessment status"},
+                },
+            },
+            "premium": {
+                "id_param": ("premium_id", "Unique premium payment identifier"),
+                "specific_params": {
+                    "policy_id": {"type": "string", "description": "Policy this premium payment is for"},
+                    "amount": {"type": "number", "description": "Premium amount due"},
+                    "billing_period": {"type": "string", "description": "Billing period covered by this premium (e.g., Jan 2026)"},
+                    "due_date": {"type": "string", "description": "Payment due date (YYYY-MM-DD)"},
+                    "status": {"type": "string", "enum": ["pending", "paid", "overdue", "waived"], "description": "Payment status"},
+                },
+            },
+            "coverage": {
+                "id_param": ("coverage_id", "Unique coverage line item identifier"),
+                "specific_params": {
+                    "policy_id": {"type": "string", "description": "Policy this coverage belongs to"},
+                    "coverage_type": {"type": "string", "description": "Type of coverage (e.g., collision, comprehensive, bodily_injury)"},
+                    "coverage_amount": {"type": "number", "description": "Maximum coverage amount for this line item"},
+                    "deductible": {"type": "number", "description": "Deductible specific to this coverage line"},
+                    "effective_date": {"type": "string", "description": "Date this coverage takes effect (YYYY-MM-DD)"},
+                },
+            },
+        },
+        "operations": {
+            "read": [
+                ("get_{e}", "Retrieve full details of a {E} including coverage breakdown, payment history, and claim records."),
+                ("search_{e}s", "Search {E}s by policyholder, policy number, type, or status. Returns matching records with risk context."),
+                ("list_{e}s", "List all {E}s with optional filtering by type, status, or date range. Includes summary statistics."),
+            ],
+            "write": [
+                ("create_{e}", "Create a new {E} record. Validates coverage requirements and triggers underwriting if applicable."),
+                ("update_{e}", "Update an existing {E}'s fields. Premium recalculation is triggered if coverage or risk factors change."),
+                ("file_{e}", "File a new insurance {E}. Initiates the claims workflow and assigns an adjuster based on claim type and severity."),
+                ("calculate_{e}_premium", "Calculate or recalculate the premium for a {E} based on current risk factors and coverage selections. Returns the updated premium breakdown."),
+            ],
+            "dangerous": [
+                ("approve_{e}", "Approve a {E} for payout or issuance. Triggers disbursement or policy activation. Once approved, this decision is binding per regulatory requirements."),
+                ("deny_{e}", "Deny a {E}. Sends the denial notice to the policyholder with the reason and appeal instructions. Denial decisions are subject to regulatory review."),
+            ],
+            "check": [
+                ("check_{e}_eligibility", "Check eligibility and coverage limits for a {E}. Returns applicable deductibles, coverage caps, and exclusions."),
+            ],
+        },
+    },
+    "real_estate": {
+        "label": "Real Estate / Property Management",
+        "entities": {
+            "property": {
+                "id_param": ("property_id", "Unique property identifier"),
+                "specific_params": {
+                    "address": {"type": "string", "description": "Full property address"},
+                    "property_type": {"type": "string", "enum": ["residential", "commercial", "industrial"], "description": "Property type classification"},
+                    "square_footage": {"type": "number", "description": "Total square footage of the property"},
+                    "unit_count": {"type": "integer", "description": "Number of rentable units in the property"},
+                    "market_value": {"type": "number", "description": "Current estimated market value in USD"},
+                    "status": {"type": "string", "enum": ["available", "occupied", "under_maintenance", "off_market"], "description": "Current property status"},
+                },
+            },
+            "lease": {
+                "id_param": ("lease_id", "Unique lease agreement identifier"),
+                "specific_params": {
+                    "property_id": {"type": "string", "description": "Property this lease is for"},
+                    "tenant_id": {"type": "string", "description": "Tenant on the lease"},
+                    "unit_number": {"type": "string", "description": "Specific unit within the property"},
+                    "rent_amount": {"type": "number", "description": "Monthly rent amount"},
+                    "lease_term": {"type": "string", "enum": ["month_to_month", "6_months", "12_months", "24_months", "36_months"], "description": "Lease duration"},
+                    "start_date": {"type": "string", "description": "Lease start date (YYYY-MM-DD)"},
+                    "end_date": {"type": "string", "description": "Lease end date (YYYY-MM-DD)"},
+                    "status": {"type": "string", "enum": ["active", "expired", "terminated", "pending_renewal"], "description": "Lease status"},
+                },
+            },
+            "tenant": {
+                "id_param": ("tenant_id", "Unique tenant identifier"),
+                "specific_params": {
+                    "name": {"type": "string", "description": "Tenant full name or business name"},
+                    "email": {"type": "string", "description": "Tenant contact email"},
+                    "phone": {"type": "string", "description": "Tenant contact phone number"},
+                    "lease_id": {"type": "string", "description": "Current active lease identifier"},
+                    "balance_due": {"type": "number", "description": "Outstanding balance due from the tenant"},
+                    "status": {"type": "string", "enum": ["active", "past_due", "eviction_notice", "vacated"], "description": "Tenant account status"},
+                },
+            },
+            "inspection": {
+                "id_param": ("inspection_id", "Unique inspection identifier"),
+                "specific_params": {
+                    "property_id": {"type": "string", "description": "Property being inspected"},
+                    "unit_number": {"type": "string", "description": "Specific unit inspected (if applicable)"},
+                    "inspection_type": {"type": "string", "enum": ["move_in", "move_out", "routine", "maintenance", "safety"], "description": "Type of inspection"},
+                    "inspector_id": {"type": "string", "description": "Inspector assigned to this inspection"},
+                    "scheduled_date": {"type": "string", "description": "Scheduled inspection date (YYYY-MM-DD)"},
+                    "status": {"type": "string", "enum": ["scheduled", "completed", "canceled", "overdue"], "description": "Inspection status"},
+                },
+            },
+            "listing": {
+                "id_param": ("listing_id", "Unique property listing identifier"),
+                "specific_params": {
+                    "property_id": {"type": "string", "description": "Property being listed"},
+                    "listing_type": {"type": "string", "enum": ["sale", "lease", "sublease"], "description": "Type of listing"},
+                    "asking_price": {"type": "number", "description": "Asking price or monthly rent"},
+                    "description": {"type": "string", "description": "Marketing description for the listing"},
+                    "photos_count": {"type": "integer", "description": "Number of photos attached to the listing"},
+                    "status": {"type": "string", "enum": ["draft", "active", "under_contract", "sold", "leased", "delisted"], "description": "Listing status"},
+                },
+            },
+        },
+        "operations": {
+            "read": [
+                ("get_{e}", "Retrieve full details of a {E} including financial history, associated leases, and maintenance records."),
+                ("search_{e}s", "Search {E}s by address, type, status, or price range. Returns matching records with occupancy data."),
+                ("list_{e}s", "List all {E}s with optional filtering by property, status, or date range. Includes portfolio summary metrics."),
+            ],
+            "write": [
+                ("create_{e}", "Create a new {E} record with the specified details. Validates property references and required fields."),
+                ("update_{e}", "Update an existing {E}'s fields. Changes are logged in the property management audit trail."),
+                ("schedule_{e}_inspection", "Schedule a new inspection for a {E}. Sends notifications to the inspector and tenant if applicable."),
+                ("publish_{e}", "Publish a {E} to configured listing platforms and portals. Makes the listing publicly visible."),
+            ],
+            "dangerous": [
+                ("terminate_{e}_lease", "Terminate a lease agreement before its natural end date. Triggers notice period calculations, security deposit processing, and tenant notification. May have legal implications."),
+                ("delist_{e}", "Remove a {E} from all listing platforms immediately. Cancels any scheduled showings and notifies interested parties."),
+            ],
+            "check": [
+                ("check_{e}_availability", "Check current availability and scheduling conflicts for a {E}. Returns vacancy status and upcoming lease expirations."),
+            ],
+        },
+    },
+    "retail": {
+        "label": "Retail / E-commerce",
+        "entities": {
+            "product": {
+                "id_param": ("product_id", "Unique product identifier"),
+                "specific_params": {
+                    "sku": {"type": "string", "description": "Stock keeping unit code"},
+                    "product_name": {"type": "string", "description": "Product display name"},
+                    "price": {"type": "number", "description": "Current retail price"},
+                    "category": {"type": "string", "description": "Product category (e.g., electronics, apparel, home)"},
+                    "quantity": {"type": "integer", "description": "Current inventory quantity across all warehouses"},
+                    "status": {"type": "string", "enum": ["active", "discontinued", "out_of_stock", "pre_order"], "description": "Product availability status"},
+                },
+            },
+            "order": {
+                "id_param": ("order_id", "Unique order identifier"),
+                "specific_params": {
+                    "customer_id": {"type": "string", "description": "Customer who placed the order"},
+                    "order_status": {"type": "string", "enum": ["pending", "processing", "shipped", "delivered", "cancelled"], "description": "Current order fulfillment status"},
+                    "total_amount": {"type": "number", "description": "Total order amount including tax and shipping"},
+                    "shipping_address": {"type": "string", "description": "Delivery address for the order"},
+                    "tracking_number": {"type": "string", "description": "Shipping carrier tracking number"},
+                    "placed_date": {"type": "string", "description": "Date the order was placed (YYYY-MM-DD)"},
+                },
+            },
+            "cart": {
+                "id_param": ("cart_id", "Unique shopping cart identifier"),
+                "specific_params": {
+                    "customer_id": {"type": "string", "description": "Customer who owns this cart"},
+                    "items": {"type": "array", "items": {"type": "object"}, "description": "List of cart items with product IDs and quantities"},
+                    "subtotal": {"type": "number", "description": "Cart subtotal before tax and shipping"},
+                    "currency": {"type": "string", "description": "Cart currency code"},
+                    "status": {"type": "string", "enum": ["active", "abandoned", "converted", "expired"], "description": "Cart status"},
+                },
+            },
+            "return": {
+                "id_param": ("return_id", "Unique return/RMA identifier"),
+                "specific_params": {
+                    "order_id": {"type": "string", "description": "Original order associated with this return"},
+                    "customer_id": {"type": "string", "description": "Customer requesting the return"},
+                    "reason": {"type": "string", "enum": ["defective", "wrong_item", "not_as_described", "changed_mind", "arrived_late", "other"], "description": "Reason for the return"},
+                    "refund_amount": {"type": "number", "description": "Refund amount to process"},
+                    "status": {"type": "string", "enum": ["requested", "approved", "item_received", "refunded", "denied"], "description": "Return processing status"},
+                },
+            },
+            "promotion": {
+                "id_param": ("promotion_id", "Unique promotion identifier"),
+                "specific_params": {
+                    "name": {"type": "string", "description": "Promotion name or title"},
+                    "discount_type": {"type": "string", "enum": ["percentage", "fixed_amount", "buy_one_get_one", "free_shipping"], "description": "Type of discount"},
+                    "discount_value": {"type": "number", "description": "Discount value (percentage or fixed amount)"},
+                    "promo_code": {"type": "string", "description": "Coupon or promo code customers enter at checkout"},
+                    "start_date": {"type": "string", "description": "Promotion start date (YYYY-MM-DD)"},
+                    "end_date": {"type": "string", "description": "Promotion end date (YYYY-MM-DD)"},
+                    "status": {"type": "string", "enum": ["draft", "active", "scheduled", "expired", "disabled"], "description": "Promotion status"},
+                },
+            },
+        },
+        "operations": {
+            "read": [
+                ("get_{e}", "Retrieve full details of a {E} including pricing history, inventory levels, and associated records."),
+                ("search_{e}s", "Search {E}s by name, SKU, category, status, or price range. Returns matching results with inventory data."),
+                ("list_{e}s", "List all {E}s with optional filtering by category, status, or date range. Includes aggregate metrics."),
+            ],
+            "write": [
+                ("create_{e}", "Create a new {E} record. Validates product references, pricing rules, and inventory availability."),
+                ("update_{e}", "Update an existing {E}'s fields. Price changes trigger notification to subscribed customers."),
+                ("apply_{e}_discount", "Apply a promotion or discount to a {E}. Validates eligibility rules and stacking policies before applying."),
+                ("update_{e}_inventory", "Update inventory quantities for a {E}. Triggers reorder alerts if stock falls below the configured threshold."),
+            ],
+            "dangerous": [
+                ("cancel_{e}_order", "Cancel an order before it ships. Triggers refund processing, restocks reserved inventory, and notifies the customer. Cannot be undone once refund is issued."),
+                ("process_{e}_return", "Process a product return and initiate the refund. Updates inventory, processes the refund to the original payment method, and closes the RMA."),
+            ],
+            "check": [
+                ("check_{e}_availability", "Check real-time inventory availability for a {E} across all fulfillment locations. Returns stock levels and estimated restock dates."),
+            ],
+        },
+    },
+    "education": {
+        "label": "Education / LMS",
+        "entities": {
+            "course": {
+                "id_param": ("course_id", "Unique course identifier"),
+                "specific_params": {
+                    "title": {"type": "string", "description": "Course title"},
+                    "department": {"type": "string", "description": "Academic department offering the course"},
+                    "instructor_id": {"type": "string", "description": "Primary instructor's faculty ID"},
+                    "credit_hours": {"type": "integer", "description": "Number of credit hours the course carries"},
+                    "semester": {"type": "string", "description": "Academic semester (e.g., Fall 2026, Spring 2027)"},
+                    "capacity": {"type": "integer", "description": "Maximum enrollment capacity"},
+                    "status": {"type": "string", "enum": ["draft", "open_enrollment", "in_progress", "completed", "canceled"], "description": "Course offering status"},
+                },
+            },
+            "enrollment": {
+                "id_param": ("enrollment_id", "Unique enrollment record identifier"),
+                "specific_params": {
+                    "student_id": {"type": "string", "description": "Student enrolled in the course"},
+                    "course_id": {"type": "string", "description": "Course the student is enrolled in"},
+                    "semester": {"type": "string", "description": "Academic semester of enrollment"},
+                    "enrollment_status": {"type": "string", "enum": ["active", "completed", "withdrawn", "incomplete"], "description": "Current enrollment status"},
+                    "enrolled_date": {"type": "string", "description": "Date the student enrolled (YYYY-MM-DD)"},
+                    "final_grade": {"type": "string", "description": "Final letter grade (if course is completed)"},
+                },
+            },
+            "student": {
+                "id_param": ("student_id", "Unique student identifier"),
+                "specific_params": {
+                    "name": {"type": "string", "description": "Student full name"},
+                    "email": {"type": "string", "description": "Student email address"},
+                    "program": {"type": "string", "description": "Degree program or major"},
+                    "gpa": {"type": "number", "description": "Current cumulative GPA (0.0-4.0)"},
+                    "enrollment_year": {"type": "integer", "description": "Year the student first enrolled"},
+                    "status": {"type": "string", "enum": ["active", "on_leave", "graduated", "suspended", "withdrawn"], "description": "Student enrollment status"},
+                },
+            },
+            "assignment": {
+                "id_param": ("assignment_id", "Unique assignment identifier"),
+                "specific_params": {
+                    "course_id": {"type": "string", "description": "Course this assignment belongs to"},
+                    "title": {"type": "string", "description": "Assignment title"},
+                    "assignment_type": {"type": "string", "enum": ["homework", "quiz", "midterm", "final_exam", "project", "lab"], "description": "Type of assignment"},
+                    "due_date": {"type": "string", "description": "Assignment due date (YYYY-MM-DD)"},
+                    "max_points": {"type": "integer", "description": "Maximum points for this assignment"},
+                    "status": {"type": "string", "enum": ["draft", "published", "closed", "graded"], "description": "Assignment status"},
+                },
+            },
+            "grade": {
+                "id_param": ("grade_id", "Unique grade record identifier"),
+                "specific_params": {
+                    "student_id": {"type": "string", "description": "Student who received the grade"},
+                    "assignment_id": {"type": "string", "description": "Assignment being graded"},
+                    "course_id": {"type": "string", "description": "Course the grade belongs to"},
+                    "grade_value": {"type": "number", "description": "Numeric grade or score (e.g., 87.5)"},
+                    "letter_grade": {"type": "string", "enum": ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F", "I", "W"], "description": "Letter grade equivalent"},
+                    "graded_date": {"type": "string", "description": "Date the grade was submitted (YYYY-MM-DD)"},
+                },
+            },
+        },
+        "operations": {
+            "read": [
+                ("get_{e}", "Retrieve full details of a {E} including enrollment data, grades, and associated records."),
+                ("search_{e}s", "Search {E}s by name, course, semester, or status. Returns matching records with academic context."),
+                ("list_{e}s", "List all {E}s with optional filtering by course, semester, or status. Includes enrollment counts and averages."),
+            ],
+            "write": [
+                ("create_{e}", "Create a new {E} record. Validates academic references and prerequisite requirements before saving."),
+                ("update_{e}", "Update an existing {E}'s fields. Changes to grades require instructor authorization."),
+                ("enroll_{e}", "Enroll a student in a course. Validates prerequisites, capacity limits, and schedule conflicts before confirming."),
+                ("submit_{e}_grade", "Submit or update a grade for a {E}. Validates against the assignment rubric and notifies the student."),
+            ],
+            "dangerous": [
+                ("withdraw_{e}", "Withdraw a student from a course. Applies the institution's withdrawal policy for grading (W grade) and refund eligibility. Deadline-dependent and cannot be reversed after the drop period."),
+                ("check_{e}_prerequisite", "Check whether prerequisite requirements are met for a {E}. Returns pass/fail with details on missing requirements."),
+            ],
+            "check": [
+                ("check_{e}_standing", "Check academic standing and progress for a {E}. Returns GPA, credit hours completed, and eligibility alerts."),
+            ],
+        },
+    },
+    "logistics": {
+        "label": "Logistics / Transportation",
+        "entities": {
+            "shipment": {
+                "id_param": ("shipment_id", "Unique shipment identifier"),
+                "specific_params": {
+                    "tracking_number": {"type": "string", "description": "Carrier-assigned tracking number"},
+                    "origin": {"type": "string", "description": "Origin facility or address"},
+                    "destination": {"type": "string", "description": "Destination facility or address"},
+                    "carrier": {"type": "string", "description": "Shipping carrier name"},
+                    "weight_kg": {"type": "number", "description": "Total shipment weight in kilograms"},
+                    "delivery_status": {"type": "string", "enum": ["pending", "in_transit", "out_for_delivery", "delivered", "failed"], "description": "Current delivery status"},
+                },
+            },
+            "route": {
+                "id_param": ("route_id", "Unique route identifier"),
+                "specific_params": {
+                    "origin": {"type": "string", "description": "Route starting point"},
+                    "destination": {"type": "string", "description": "Route endpoint"},
+                    "distance_km": {"type": "number", "description": "Total route distance in kilometers"},
+                    "estimated_hours": {"type": "number", "description": "Estimated transit time in hours"},
+                    "vehicle_id": {"type": "string", "description": "Vehicle assigned to this route"},
+                    "status": {"type": "string", "enum": ["planned", "active", "completed", "canceled"], "description": "Route status"},
+                },
+            },
+            "vehicle": {
+                "id_param": ("vehicle_id", "Unique vehicle or fleet asset identifier"),
+                "specific_params": {
+                    "plate_number": {"type": "string", "description": "Vehicle license plate number"},
+                    "vehicle_type": {"type": "string", "enum": ["van", "truck", "semi_trailer", "refrigerated", "flatbed"], "description": "Vehicle type classification"},
+                    "capacity_kg": {"type": "number", "description": "Maximum load capacity in kilograms"},
+                    "current_location": {"type": "string", "description": "Current GPS location or last known facility"},
+                    "status": {"type": "string", "enum": ["available", "in_transit", "maintenance", "out_of_service"], "description": "Current vehicle status"},
+                    "driver_id": {"type": "string", "description": "Driver currently assigned to this vehicle"},
+                },
+            },
+            "warehouse": {
+                "id_param": ("warehouse_id", "Unique warehouse facility identifier"),
+                "specific_params": {
+                    "name": {"type": "string", "description": "Warehouse facility name"},
+                    "address": {"type": "string", "description": "Warehouse physical address"},
+                    "capacity_sqft": {"type": "number", "description": "Total storage capacity in square feet"},
+                    "utilization_pct": {"type": "number", "description": "Current space utilization percentage (0-100)"},
+                    "warehouse_type": {"type": "string", "enum": ["general", "cold_storage", "hazmat", "bonded", "cross_dock"], "description": "Warehouse type classification"},
+                    "status": {"type": "string", "enum": ["operational", "maintenance", "closed"], "description": "Facility operational status"},
+                },
+            },
+            "delivery": {
+                "id_param": ("delivery_id", "Unique delivery attempt identifier"),
+                "specific_params": {
+                    "shipment_id": {"type": "string", "description": "Shipment this delivery belongs to"},
+                    "recipient_name": {"type": "string", "description": "Recipient name for the delivery"},
+                    "delivery_address": {"type": "string", "description": "Delivery address"},
+                    "scheduled_date": {"type": "string", "description": "Scheduled delivery date (YYYY-MM-DD)"},
+                    "time_window": {"type": "string", "enum": ["morning", "afternoon", "evening", "all_day"], "description": "Preferred delivery time window"},
+                    "status": {"type": "string", "enum": ["scheduled", "out_for_delivery", "delivered", "failed", "rescheduled"], "description": "Delivery attempt status"},
+                    "signature_required": {"type": "boolean", "description": "Whether a signature is required upon delivery"},
+                },
+            },
+        },
+        "operations": {
+            "read": [
+                ("get_{e}", "Retrieve full details of a {E} including tracking events, route data, and proof of delivery."),
+                ("search_{e}s", "Search {E}s by tracking number, origin, destination, carrier, or status. Returns matching records with logistics context."),
+                ("list_{e}s", "List all {E}s with optional filtering by status, carrier, or date range. Includes fleet and capacity summaries."),
+            ],
+            "write": [
+                ("create_{e}", "Create a new {E} record. Validates capacity, route feasibility, and carrier availability before confirmation."),
+                ("update_{e}", "Update an existing {E}'s details. Triggers downstream notifications if delivery dates or destinations change."),
+                ("dispatch_{e}", "Dispatch a {E} for pickup or delivery. Assigns a vehicle and driver, generates the route, and notifies the carrier."),
+                ("reroute_{e}", "Reroute a {E} to a different destination or via an alternative path. Recalculates ETA and notifies all affected parties."),
+            ],
+            "dangerous": [
+                ("cancel_{e}_shipment", "Cancel a shipment. Reverses carrier bookings, releases reserved capacity, and notifies the sender and recipient. Cannot be undone once the carrier has picked up the goods."),
+                ("check_{e}_capacity", "Check available capacity at a warehouse or on a route. Returns current utilization, available slots, and upcoming reservations."),
+            ],
+            "check": [
+                ("track_{e}", "Get real-time tracking for a {E}. Returns current location, estimated arrival, and full event history."),
+            ],
+        },
+    },
 }
 
 # ---------------------------------------------------------------------------
@@ -1125,8 +1773,8 @@ def generate_schemas() -> list:
             e_label = _entity_label(entity_key)
             for op_type, ops in domain_cfg["operations"].items():
                 for op_template_name, op_template_desc in ops:
-                    # Build tool name: replace {e} with entity key
-                    tool_name = op_template_name.replace("{e}", entity_key)
+                    # Build tool name: replace {e}s with pluralized, {e} with singular
+                    tool_name = op_template_name.replace("{e}s", pluralize(entity_key)).replace("{e}", entity_key)
 
                     # Skip if this name was already generated (e.g., from entity overlap)
                     if tool_name in used_names:
@@ -1136,8 +1784,9 @@ def generate_schemas() -> list:
                         continue
                     used_names.add(tool_name)
 
-                    # Build description
-                    desc = op_template_desc.replace("{E}", e_label).replace("{e}", e_label)
+                    # Build description: pluralize labels too
+                    e_label_plural = pluralize(e_label)
+                    desc = op_template_desc.replace("{E}s", e_label_plural).replace("{E}", e_label).replace("{e}s", e_label_plural).replace("{e}", e_label)
 
                     # Build parameters
                     properties, required = _pick_params(entity_cfg, op_type, op_template_name)

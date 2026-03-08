@@ -553,7 +553,13 @@ def call_gemini(prompt: str, expected_count: int) -> list[dict]:
                 time.sleep(5)
                 continue
 
-            # Save raw output for debugging
+            # Save full raw output for recovery
+            raw_file = OUTPUT_DIR / "_raw_responses.jsonl"
+            with open(raw_file, "a") as f:
+                f.write(json.dumps({"_raw": output, "_parse_error": True,
+                                    "_timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")}) + "\n")
+                f.flush()
+                os.fsync(f.fileno())
             return [{"_raw": output[:2000], "_parse_error": True}]
 
         except subprocess.TimeoutExpired:
@@ -750,6 +756,8 @@ def generate_category(category: str, schemas: list, limit: int = None):
 
     generated = existing_count
     batch_num = 0
+    consecutive_empty = 0
+    MAX_CONSECUTIVE_EMPTY = 5
     prompt_builder = PROMPT_BUILDERS[category]
 
     while generated < target:
@@ -774,7 +782,13 @@ def generate_category(category: str, schemas: list, limit: int = None):
         results = call_gemini(prompt, batch_size)
 
         if not results:
-            print(f"    WARNING: Empty results for batch {batch_num+1}", flush=True)
+            consecutive_empty += 1
+            print(f"    WARNING: Empty results for batch {batch_num+1} "
+                  f"({consecutive_empty}/{MAX_CONSECUTIVE_EMPTY} consecutive)", flush=True)
+            if consecutive_empty >= MAX_CONSECUTIVE_EMPTY:
+                print(f"    ERROR: {MAX_CONSECUTIVE_EMPTY} consecutive empty batches. "
+                      f"Stopping. Re-run to resume.", flush=True)
+                break
             batch_num += 1
             time.sleep(2)
             continue
@@ -798,6 +812,8 @@ def generate_category(category: str, schemas: list, limit: int = None):
 
                 with open(output_file, "a") as f:
                     f.write(json.dumps(case, ensure_ascii=False) + "\n")
+                    f.flush()
+                    os.fsync(f.fileno())
 
                 existing_ids.add(case_id)
                 valid_count += 1
@@ -806,9 +822,20 @@ def generate_category(category: str, schemas: list, limit: int = None):
                 case["_category"] = category
                 with open(malformed_file, "a") as f:
                     f.write(json.dumps(case, ensure_ascii=False) + "\n")
+                    f.flush()
+                    os.fsync(f.fileno())
 
         generated += valid_count
         batch_num += 1
+
+        if valid_count > 0:
+            consecutive_empty = 0
+        else:
+            consecutive_empty += 1
+            if consecutive_empty >= MAX_CONSECUTIVE_EMPTY:
+                print(f"    ERROR: {MAX_CONSECUTIVE_EMPTY} consecutive empty batches. "
+                      f"Stopping. Re-run to resume.", flush=True)
+                break
 
         if valid_count < batch_size:
             print(f"    Got {valid_count}/{batch_size} valid cases", flush=True)

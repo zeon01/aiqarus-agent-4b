@@ -531,7 +531,13 @@ def call_gemini(prompt: str) -> list[dict]:
                 time.sleep(5)
                 continue
 
-            # Save raw output for debugging
+            # Save full raw output for recovery
+            raw_file = FOUNDATION_DIR / "_raw_responses.jsonl"
+            with open(raw_file, "a") as f:
+                f.write(json.dumps({"_raw": output, "_parse_error": True,
+                                    "_timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")}) + "\n")
+                f.flush()
+                os.fsync(f.fileno())
             return [{"_raw": output[:3000], "_parse_error": True}]
 
         except subprocess.TimeoutExpired:
@@ -887,6 +893,8 @@ def generate(args):
 
                 with open(output_file, "a") as f:
                     f.write(json.dumps(sample, ensure_ascii=False) + "\n")
+                    f.flush()
+                    os.fsync(f.fileno())
 
                 existing_ids.add(sample_id)
                 action_counts[action_type] += 1
@@ -898,6 +906,8 @@ def generate(args):
                 sample["_expected_action_type"] = action_type
                 with open(malformed_file, "a") as f:
                     f.write(json.dumps(sample, ensure_ascii=False) + "\n")
+                    f.flush()
+                    os.fsync(f.fileno())
                 total_malformed += 1
 
         total_batches += 1

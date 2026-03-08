@@ -1,0 +1,207 @@
+{
+  "crm_lookup_customer": [
+    "searchContacts", "findCustomer", "CRM_getRecord", "customer_search",
+    "lookupClient", "query_customer_db", "get_customer_info", "fetch_contact",
+    "search_accounts", "retrieve_customer_data", "find_account", "getClientRecord"
+  ],
+  "crm_update_record": [
+    "updateContact", "modify_crm_entry", "CRM_patchRecord", "edit_customer_record",
+    "save_contact_changes", "update_client_info", "patch_account", "crm_edit_field",
+    "modifyCustomerData", "set_crm_fields", "record_update", "writeContactUpdate"
+  ],
+  "crm_list_opportunities": [
+    "listDeals", "get_sales_pipeline", "fetchOpportunities", "query_deals",
+    "CRM_getDealList", "list_sales_opportunities", "search_pipeline", "get_open_deals",
+    "retrieveOpportunities", "deal_search", "pipeline_query", "listSalesDeals"
+  ],
+  "crm_create_task": [
+    "addCrmTask", "create_follow_up", "new_crm_activity", "schedule_crm_task",
+    "CRM_createActivity", "add_task_to_account", "createFollowUp", "insert_crm_task",
+    "log_crm_action", "queue_crm_task", "newAccountTask", "create_activity_item"
+  ],
+  "crm_get_account": [
+    "fetchAccountDetails", "get_account_info", "retrieve_crm_account", "CRM_getAccountById",
+    "lookup_account_record", "getAccountData", "query_account", "load_account_details",
+    "account_info_lookup", "readAccountRecord", "find_crm_account", "get_client_account"
+  ],
+  "crm_update_opportunity": [
+    "updateDeal", "modify_opportunity", "patchDealRecord", "edit_sales_deal",
+    "CRM_updateDeal", "save_opportunity_changes", "set_deal_status", "update_pipeline_item",
+    "modifyDealFields", "writeDealUpdate", "change_opportunity_stage", "deal_field_update"
+  ],
+  "db_query": [
+    "runSqlQuery", "execute_read_query", "queryDatabase", "sql_select",
+    "fetch_db_records", "database_read", "run_analytics_query", "DB_executeSelect",
+    "data_query", "read_from_database", "sql_fetch", "executeReadQuery"
+  ],
+  "db_write": [
+    "executeSqlWrite", "database_insert", "DB_executeWrite", "run_write_query",
+    "sql_modify", "write_to_database", "db_execute_mutation", "insertDbRecord",
+    "database_mutate", "sql_update_insert", "run_db_mutation", "executeWriteOp"
+  ],
+  "db_execute": [
+    "runDbCommand", "execute_sql_statement", "DB_run", "sql_execute",
+    "database_exec", "run_database_command", "executeStatement", "db_run_sql",
+    "perform_db_operation", "sql_command", "database_operation", "execDbStatement"
+  ],
+  "db_modify": [
+    "alterDbRecord", "modify_database_entry", "DB_patchRow", "update_db_record",
+    "database_update_row", "editDbEntry", "patch_db_record", "changeDbData",
+    "db_record_update", "write_db_changes", "modifyDatabaseRow", "db_alter_entry"
+  ],
+  "doc_search": [
+    "searchDocuments", "find_document", "query_doc_repository", "document_lookup",
+    "search_knowledge_base", "findInDocs", "doc_query", "retrieve_documents",
+    "knowledge_search", "lookupDocuments", "search_doc_store", "queryDocRepo"
+  ],
+  "doc_get_content": [
+    "fetchDocumentContent", "read_document", "getDocById", "retrieve_doc_text",
+    "load_document", "document_read", "get_doc_body", "readDocContent",
+    "fetch_doc_text", "downloadDocument", "getDocumentBody", "doc_retrieve_content"
+  ],
+  "document_search": [
+    "findDocuments", "search_doc_library", "queryDocuments", "doc_fulltext_search",
+    "lookup_documents", "document_query", "searchFileRepository", "find_in_library",
+    "doc_keyword_search", "searchInternalDocs", "document_find", "query_file_store"
+  ],
+  "document_create": [
+    "createNewDocument", "new_document", "draft_document", "doc_create",
+    "generate_document", "addDocument", "write_new_doc", "create_doc_entry",
+    "insertDocument", "newDocRecord", "compose_document", "createFileEntry"
+  ],
+  "monitor_get_metrics": [
+    "fetchServiceMetrics", "get_system_stats", "query_monitoring_data", "readMetrics",
+    "retrieve_performance_data", "getSystemMetrics", "metrics_query", "pull_service_stats",
+    "load_monitoring_metrics", "check_system_performance", "getObservabilityData", "service_metrics_read"
+  ],
+  "monitor_get_alerts": [
+    "fetchActiveAlerts", "get_incidents", "query_alert_feed", "listAlerts",
+    "retrieve_service_alerts", "getActiveIncidents", "alert_query", "check_active_alerts",
+    "load_incident_list", "pull_alert_data", "getAlertsFeed", "service_alert_check"
+  ],
+  "monitoring_get_metrics": [
+    "getMonitoringStats", "fetch_observability_metrics", "readSystemMetrics", "query_perf_data",
+    "retrieve_monitoring_data", "pullMetrics", "monitoring_stats_query", "getServicePerformance",
+    "check_metrics_dashboard", "load_perf_metrics", "observability_query", "metrics_dashboard_read"
+  ],
+  "monitoring_get_alerts": [
+    "getMonitoringAlerts", "fetch_incident_feed", "readAlertStream", "query_active_incidents",
+    "retrieve_alert_list", "pullActiveAlerts", "monitoring_alert_query", "getIncidentFeed",
+    "check_alert_dashboard", "load_alert_stream", "incident_feed_read", "alertDashboardQuery"
+  ],
+  "finance_get_balance": [
+    "getAccountBalance", "check_balance", "balance_inquiry", "account_balance_lookup",
+    "query_balance", "fetch_financial_balance", "retrieve_account_funds", "get_ledger_balance",
+    "check_account_standing", "balance_check", "account_summary_balance", "readFinancialBalance"
+  ],
+  "finance_get_budget": [
+    "getBudgetInfo", "check_budget_allocation", "query_budget", "fetch_budget_data",
+    "retrieve_department_budget", "budget_lookup", "get_budget_status", "readBudgetRecord",
+    "load_budget_details", "budget_inquiry", "getDepartmentBudget", "budget_summary_fetch"
+  ],
+  "finance_get_invoice": [
+    "getInvoiceDetails", "fetch_invoice", "lookup_invoice", "retrieve_billing_record",
+    "query_invoice", "find_invoice", "invoice_search", "loadInvoiceData",
+    "get_billing_info", "readInvoiceRecord", "fetchBillingDocument", "invoice_detail_query"
+  ],
+  "finance_get_report": [
+    "getFinancialReport", "fetch_finance_summary", "retrieve_financial_data", "query_finance_report",
+    "load_financial_report", "readFinanceReport", "pull_finance_data", "get_accounting_report",
+    "financial_report_query", "fetchAccountingData", "finance_summary_read", "getRevenueReport"
+  ],
+  "finance_approve_expense": [
+    "approveExpenseRequest", "authorize_expense", "expense_approval", "confirm_expense_claim",
+    "sign_off_expense", "grant_expense_approval", "validateExpense", "approve_reimbursement",
+    "expense_authorize", "okExpenseClaim", "processExpenseApproval", "confirm_spend_request"
+  ],
+  "finance_create_payment": [
+    "initiatePayment", "create_payment_request", "submit_payment", "new_payment_order",
+    "schedule_payment", "processPayment", "issue_payment", "payment_create",
+    "sendPayment", "createPaymentTransaction", "queue_payment", "register_payment_order"
+  ],
+  "finance_create_transaction": [
+    "recordTransaction", "create_ledger_entry", "log_financial_transaction", "new_transaction",
+    "post_transaction", "insertTransaction", "register_financial_entry", "addLedgerRecord",
+    "submit_transaction", "createAccountingEntry", "book_transaction", "transaction_record_create"
+  ],
+  "hr_get_employee": [
+    "fetchEmployeeRecord", "get_staff_info", "lookup_employee", "retrieve_hr_record",
+    "HR_getEmployeeById", "employee_lookup", "getStaffRecord", "query_employee_data",
+    "load_employee_profile", "readEmployeeInfo", "find_employee_record", "getPersonnelData"
+  ],
+  "hr_list_employees": [
+    "listStaffMembers", "get_employee_directory", "fetch_team_roster", "query_hr_directory",
+    "HR_listAll", "search_employees", "getStaffList", "employee_directory_query",
+    "retrieve_team_members", "list_personnel", "browseEmployees", "fetch_employee_roster"
+  ],
+  "hr_lookup_employee": [
+    "searchEmployee", "find_staff_member", "HR_searchRecord", "employee_search",
+    "query_employee", "lookupStaffMember", "get_employee_by_name", "findPersonnelRecord",
+    "search_hr_database", "locate_employee", "HR_findEmployee", "staff_member_search"
+  ],
+  "hr_update_employee": [
+    "editEmployeeRecord", "modify_staff_info", "HR_patchEmployee", "update_personnel_data",
+    "save_employee_changes", "updateStaffRecord", "patch_hr_record", "changeEmployeeDetails",
+    "employee_record_update", "writeEmployeeChanges", "modifyHREntry", "set_employee_fields"
+  ],
+  "hr_update_record": [
+    "editHrRecord", "modify_hr_entry", "HR_updateField", "patch_employee_record",
+    "save_hr_changes", "updatePersonnelRecord", "hr_field_update", "changeHrData",
+    "write_hr_update", "modifyStaffRecord", "set_hr_record_fields", "hr_record_patch"
+  ],
+  "hr_submit_leave_request": [
+    "requestTimeOff", "submit_pto_request", "create_leave_application", "file_leave_request",
+    "HR_submitLeave", "apply_for_leave", "new_time_off_request", "createPtoRequest",
+    "send_leave_application", "request_absence", "submitAbsenceRequest", "lodge_leave_claim"
+  ],
+  "pm_create_task": [
+    "addProjectTask", "create_work_item", "new_task", "PM_createWorkItem",
+    "insert_task", "createTicketItem", "add_to_backlog", "schedule_task",
+    "newWorkItem", "registerTask", "task_create", "addBacklogItem"
+  ],
+  "pm_create_ticket": [
+    "openTicket", "create_issue", "new_support_ticket", "PM_createIssue",
+    "file_ticket", "submitTicket", "raise_ticket", "createBugReport",
+    "newIssueTicket", "register_ticket", "log_issue", "ticket_create"
+  ],
+  "pm_get_project": [
+    "fetchProjectDetails", "get_project_info", "retrieve_project", "PM_getProject",
+    "load_project_data", "readProjectRecord", "query_project", "getProjectStatus",
+    "project_info_lookup", "find_project", "lookupProjectDetails", "project_detail_fetch"
+  ],
+  "pm_get_tasks": [
+    "listProjectTasks", "get_task_list", "fetch_work_items", "PM_getTasks",
+    "retrieve_task_queue", "getTasksForProject", "query_task_board", "load_task_list",
+    "readProjectTasks", "list_work_items", "task_board_query", "fetchBacklogItems"
+  ],
+  "pm_update_task": [
+    "editTask", "modify_work_item", "PM_patchTask", "update_task_status",
+    "save_task_changes", "changeTaskDetails", "patch_task", "setTaskFields",
+    "task_field_update", "modifyTaskRecord", "writeTaskUpdate", "updateWorkItem"
+  ],
+  "comms_send_email": [
+    "sendEmail", "dispatch_email", "email_send", "send_mail_message",
+    "deliverEmail", "createAndSendEmail", "post_email", "transmitEmail",
+    "fire_email", "queue_email_delivery", "outbound_email_send", "emailDispatch"
+  ],
+  "comms_send_slack": [
+    "sendSlackMessage", "post_to_slack", "slack_send", "send_chat_message",
+    "deliverSlackNotification", "slackPost", "dispatch_slack_msg", "notify_via_slack",
+    "slack_notify", "queue_slack_message", "postSlackNotification", "send_channel_message"
+  ],
+  "send_email": [
+    "dispatchEmail", "mail_send", "deliver_email_message", "email_dispatch",
+    "transmit_email", "fire_off_email", "post_mail", "sendOutboundEmail",
+    "email_transmit", "queue_email", "createEmail", "outbound_mail_send"
+  ],
+  "send_slack_message": [
+    "postSlack", "slack_message_send", "deliver_slack_msg", "dispatch_slack_notification",
+    "send_to_slack_channel", "slackNotify", "transmit_slack_message", "fire_slack_msg",
+    "notify_slack_channel", "queue_slack_notification", "slack_dispatch", "broadcastSlack"
+  ],
+  "Document": [
+    "FileRecord", "DocEntry", "ContentItem", "DocumentRecord",
+    "KnowledgeArticle", "InfoDocument", "ContentRecord", "ArchiveEntry",
+    "LibraryItem", "StoredDocument", "FileDocument", "RepositoryEntry"
+  ]
+}

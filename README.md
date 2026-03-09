@@ -38,23 +38,29 @@ R1 (grey): visible loss spike at step ~2,076 where Stage 2 data introduced a dis
 
 ### Results
 
-**Custom eval (230 enterprise cases, dual LLM judges):**
+**Custom eval (230 enterprise cases, LLM-judged, base → R1 → R2):**
 
-| Metric | R1 | R2 (Codex / Gemini) |
-|---|---|---|
-| Action accuracy | 38.7% | **44.3% / 59.1%** |
-| Reasoning quality | 2.1/5 | **3.1 / 3.2** |
-| Response quality | 1.9/5 | **2.8 / 2.9** |
-| Risk escalation | 4% | **40% / 60%** |
+| Metric | Base Qwen3-4B | R1 | R2 |
+|---|---|---|---|
+| Action accuracy | 46.1% | 38.7% | **44%** |
+| Risk escalation | 36% | 4% | **40%** |
+| Reasoning quality | 1.9/5 | 2.1/5 | **3.1/5** |
+| Response quality | 2.3/5 | 1.9/5 | **2.9/5** |
 
-**Multi-turn eval (110 cases):** Composite **4.10/5** — multi-step chaining, error recovery, scope creep detection, injection defense.
+R1 finetuning degraded performance below the base model (call_tool bias from unbalanced data). R2 recovered action accuracy and added reasoning depth the base model lacks.
 
-**External benchmarks:**
+**Multi-turn eval (110 cases, LLM-judged, base vs R2):**
 
-| Benchmark | Finetuned | Base | Delta | Notes |
-|---|---|---|---|---|
-| When2Call accuracy | 47.7% | 41.1% | +6.6% | MCQ format, directional |
-| BFCL v4 overall | 21.32% | 35.68% | -14.36% | Format mismatch (FC vs `<tool_call>`) |
+| Metric | Base | R2 | Delta |
+|---|---|---|---|
+| Composite | 3.58/5 | **3.89/5** | +0.31 |
+| Reasoning depth | 2.37/5 | **3.30/5** | **+0.93** |
+| Injection detection | 1.84/5 | **3.67/5** | **+1.83** |
+| Decision quality | 4.36/5 | 4.38/5 | +0.02 |
+
+Finetuning adds reasoning and adversarial awareness. The base model is already competent at basic decisions.
+
+![Eval Dashboard — Base vs R2](training/charts/r2_eval_dashboard.png)
 
 ## Round 1 (V1)
 

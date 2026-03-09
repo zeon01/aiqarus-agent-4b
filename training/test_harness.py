@@ -8,6 +8,7 @@ quality, and adversarial robustness.
 Usage:
   modal run training/test_harness.py
   modal run training/test_harness.py --limit 10   # quick smoke test
+  modal run training/test_harness.py --base-only  # run base model without adapter
 """
 
 import json
@@ -16,7 +17,7 @@ import re
 
 BASE_MODEL  = "Qwen/Qwen3-4B-Instruct-2507"
 VOLUME_NAME = "aiqarus-data"
-ADAPTER_DIR = "/data/adapter/aiqarus-agent-4b"
+ADAPTER_DIR = "/data/adapter/aiqarus-agent-4b-v2"
 HF_REPO     = "zeon01/aiqarus-agent-4b"
 
 image = (
@@ -184,14 +185,13 @@ def score_adversarial(expected: dict, output: str, tool_calls: list[dict]) -> di
 
 @app.function(
     image=image,
-    gpu="A10G",
+    gpu="B200",
     volumes={"/data": volume},
     timeout=4 * 3600,
     memory=32768,
 )
-def run_tests(limit: int = 0):
+def run_tests(limit: int = 0, base_only: bool = False):
     import torch
-    from peft import PeftModel
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     # ── Load model ───────────────────────────────────────────────────────
@@ -206,11 +206,16 @@ def run_tests(limit: int = 0):
         trust_remote_code=True,
     )
 
-    print(f"\nLoading LoRA adapter: {ADAPTER_DIR}")
-    model = PeftModel.from_pretrained(model, ADAPTER_DIR)
-    model = model.merge_and_unload()
+    if base_only:
+        print("Running BASE MODEL only (no adapter).\n")
+    else:
+        from peft import PeftModel
+        print(f"\nLoading LoRA adapter: {ADAPTER_DIR}")
+        model = PeftModel.from_pretrained(model, ADAPTER_DIR)
+        model = model.merge_and_unload()
+        print("Model loaded and merged.\n")
+
     model.config.use_cache = True
-    print("Model loaded and merged.\n")
 
     # ── Load test cases ──────────────────────────────────────────────────
     test_cases = []
@@ -268,7 +273,7 @@ def run_tests(limit: int = 0):
         with torch.no_grad():
             output_ids = model.generate(
                 **inputs,
-                max_new_tokens=1024,
+                max_new_tokens=8192,
                 temperature=0.1,
                 top_p=0.9,
                 do_sample=True,
@@ -314,14 +319,16 @@ def run_tests(limit: int = 0):
     results_dir = "/data/results"
     os.makedirs(results_dir, exist_ok=True)
 
+    suffix = "_base" if base_only else ""
+
     # Detailed results
-    results_path = f"{results_dir}/test_results.jsonl"
+    results_path = f"{results_dir}/test_results{suffix}.jsonl"
     with open(results_path, "w") as f:
         for r in results:
             f.write(json.dumps(r) + "\n")
 
     # Summary
-    summary_path = f"{results_dir}/test_summary.json"
+    summary_path = f"{results_dir}/test_summary{suffix}.json"
     with open(summary_path, "w") as f:
         json.dump(summary, f, indent=2)
 
@@ -448,29 +455,31 @@ def print_summary(summary: dict):
 
 
 @app.local_entrypoint()
-def main(limit: int = 0):
+def main(limit: int = 0, base_only: bool = False):
     """
-    Run test harness against fine-tuned model.
+    Run test harness against fine-tuned or base model.
 
     Flags:
-      --limit N   Only run first N test cases (quick smoke test)
+      --limit N      Only run first N test cases (quick smoke test)
+      --base-only    Run base model without LoRA adapter
     """
     import os
 
-    output = run_tests.remote(limit=limit)
+    output = run_tests.remote(limit=limit, base_only=base_only)
     summary = output["summary"]
     results = output["results"]
 
     # Save locally
+    suffix = "_base" if base_only else ""
     local_dir = os.path.join(os.path.dirname(__file__), "..", "data")
     os.makedirs(local_dir, exist_ok=True)
 
-    local_results = os.path.join(local_dir, "test_results.jsonl")
+    local_results = os.path.join(local_dir, f"test_results{suffix}.jsonl")
     with open(local_results, "w") as f:
         for r in results:
             f.write(json.dumps(r) + "\n")
 
-    local_summary = os.path.join(local_dir, "test_summary.json")
+    local_summary = os.path.join(local_dir, f"test_summary{suffix}.json")
     with open(local_summary, "w") as f:
         json.dump(summary, f, indent=2)
 

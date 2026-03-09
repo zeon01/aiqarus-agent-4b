@@ -73,6 +73,29 @@ Scoring rubric:
 Return ONLY the JSON object."""
 
 
+def extract_json_from_output(output: str) -> dict | None:
+    """Extract a JSON object from LLM output that may contain extra text."""
+    lines = output.split('\n')
+    json_lines = []
+    in_json = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith('{'):
+            in_json = True
+            json_lines = [stripped]
+        elif in_json:
+            json_lines.append(stripped)
+            if stripped.endswith('}'):
+                break
+
+    if json_lines:
+        json_str = ' '.join(json_lines)
+        return json.loads(json_str)
+
+    # Try parsing the whole output as JSON
+    return json.loads(output)
+
+
 def call_codex_judge(prompt: str, max_retries: int = 3) -> dict | None:
     """Call Codex CLI with gpt-5-codex-mini to judge a single result."""
     for attempt in range(max_retries):
@@ -88,27 +111,90 @@ def call_codex_judge(prompt: str, max_retries: int = 3) -> dict | None:
             if not output:
                 continue
 
-            # Extract JSON from output — codex may add header/footer text
-            # Find the last JSON object in the output
-            lines = output.split('\n')
-            json_lines = []
-            in_json = False
-            for line in lines:
-                stripped = line.strip()
-                if stripped.startswith('{'):
-                    in_json = True
-                    json_lines = [stripped]
-                elif in_json:
-                    json_lines.append(stripped)
-                    if stripped.endswith('}'):
-                        break
+            return extract_json_from_output(output)
 
-            if json_lines:
-                json_str = ' '.join(json_lines)
-                return json.loads(json_str)
+        except (json.JSONDecodeError, subprocess.TimeoutExpired) as e:
+            if attempt < max_retries - 1:
+                time.sleep(2)
+                continue
+            print(f"    Failed after {max_retries} attempts: {e}", file=sys.stderr)
+            return None
+        except Exception as e:
+            print(f"    Error: {e}", file=sys.stderr)
+            return None
 
-            # Try parsing the whole output as JSON
-            return json.loads(output)
+    return None
+
+
+def call_openrouter_judge(prompt: str, max_retries: int = 3) -> dict | None:
+    """Call OpenRouter API with gpt-5.1-codex-mini to judge a single result."""
+    from openai import OpenAI
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    client = OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=os.getenv("OPENROUTER_API_KEY"),
+    )
+
+    for attempt in range(max_retries):
+        try:
+            resp = client.chat.completions.create(
+                model="openai/gpt-5.1-codex-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
+                max_tokens=500,
+            )
+            output = resp.choices[0].message.content.strip()
+            if not output:
+                continue
+
+            # Strip markdown fences if present
+            if "```json" in output:
+                output = output.split("```json", 1)[1].split("```", 1)[0].strip()
+            elif "```" in output:
+                output = output.split("```", 1)[1].split("```", 1)[0].strip()
+
+            return extract_json_from_output(output)
+
+        except (json.JSONDecodeError,) as e:
+            if attempt < max_retries - 1:
+                time.sleep(2)
+                continue
+            print(f"    Failed after {max_retries} attempts: {e}", file=sys.stderr)
+            return None
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(2)
+                continue
+            print(f"    Error: {e}", file=sys.stderr)
+            return None
+
+    return None
+
+
+def call_gemini_judge(prompt: str, max_retries: int = 3) -> dict | None:
+    """Call Gemini CLI with gemini-3-flash-preview to judge a single result."""
+    for attempt in range(max_retries):
+        try:
+            result = subprocess.run(
+                ["gemini", "-m", "gemini-3-flash-preview", "-s", "false", "-p", prompt],
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+
+            output = result.stdout.strip()
+            if not output:
+                continue
+
+            # Strip markdown fences if present
+            if "```json" in output:
+                output = output.split("```json", 1)[1].split("```", 1)[0].strip()
+            elif "```" in output:
+                output = output.split("```", 1)[1].split("```", 1)[0].strip()
+
+            return extract_json_from_output(output)
 
         except (json.JSONDecodeError, subprocess.TimeoutExpired) as e:
             if attempt < max_retries - 1:
@@ -148,6 +234,8 @@ def main():
                         help="Directory containing eval_functional.jsonl and eval_adversarial.jsonl")
     parser.add_argument("--limit", type=int, default=0,
                         help="Only judge first N results (0=all)")
+    parser.add_argument("--backend", choices=["codex", "gemini", "openrouter"], default="codex",
+                        help="LLM backend: codex (gpt-5-codex-mini), gemini (gemini-3-flash-preview), or openrouter (gpt-5.1-codex-mini via API)")
     args = parser.parse_args()
 
     # Load results
@@ -164,13 +252,46 @@ def main():
     # Load original test cases for context
     test_cases = load_test_cases(args.eval_dir)
 
+    if args.backend == "gemini":
+        judge_fn = call_gemini_judge
+        model_name = "gemini-3-flash-preview"
+    elif args.backend == "openrouter":
+        judge_fn = call_openrouter_judge
+        model_name = "gpt-5.1-codex-mini (OpenRouter)"
+    else:
+        judge_fn = call_codex_judge
+        model_name = "gpt-5-codex-mini"
+
+    # Resume support: load already-judged IDs
+    already_judged = {}
+    if os.path.exists(args.output):
+        with open(args.output) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    entry = json.loads(line)
+                    if entry.get("judge") is not None:
+                        already_judged[entry.get("id", "")] = entry
+
+    skipped = len(already_judged)
     print(f"Loaded {len(results)} results to judge")
     print(f"Loaded {len(test_cases)} original test cases")
-    print(f"Using: gpt-5-codex-mini via Codex CLI\n")
+    if skipped:
+        print(f"Resuming: {skipped} already judged, {len(results) - skipped} remaining")
+    print(f"Using: {model_name} via {args.backend} CLI\n")
 
-    judged = []
+    # Open output file in append mode for incremental writes
+    # If resuming, keep existing file; otherwise start fresh
+    out_f = open(args.output, "a" if skipped else "w")
+
+    judged = list(already_judged.values())
     for i, r in enumerate(results):
         tc_id = r.get("id", f"case_{i}")
+
+        # Skip already-judged
+        if tc_id in already_judged:
+            continue
+
         tc = test_cases.get(tc_id, {})
         expected = tc.get("expected", {
             "action": r.get("expected_action", "unknown"),
@@ -187,7 +308,7 @@ def main():
         )
 
         print(f"  [{i+1}/{len(results)}] {tc_id}...", end=" ", flush=True)
-        scores = call_codex_judge(prompt)
+        scores = judge_fn(prompt)
 
         if scores:
             r["judge"] = scores
@@ -203,13 +324,14 @@ def main():
 
         judged.append(r)
 
+        # Incremental write — flush each result immediately
+        out_f.write(json.dumps(r) + "\n")
+        out_f.flush()
+
         # Brief pause between calls
         time.sleep(0.5)
 
-    # Save judged results
-    with open(args.output, "w") as f:
-        for r in judged:
-            f.write(json.dumps(r) + "\n")
+    out_f.close()
 
     # Compute summary
     scored = [r for r in judged if r.get("judge")]
